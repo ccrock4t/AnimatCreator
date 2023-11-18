@@ -1,5 +1,5 @@
 # AnimatCreator
-Create Hebbian AI animal robots and evolve their neural genomes
+Create Hebbian AI animal robots and evolve their brains to walk
 
 # Writing
 TBD
