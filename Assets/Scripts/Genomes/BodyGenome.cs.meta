@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: ba0e24b582b0da843b57f7cf47cce8b5
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - bodySegment: {fileID: 3741358078142982187, guid: 4b30bdb0dadef3b41a4fa11048d2df56, type: 3}
+  - vertexColor: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
