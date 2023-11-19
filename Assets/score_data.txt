@@ -1,0 +1,1 @@
+Generation,Average Score in Generation,Max Score in Generation,High Score of All Time
