@@ -1,6 +1,12 @@
 # AnimatCreator
 Create Hebbian AI animal robots and evolve their brains to walk
 
+You can select one of various Genetic Encodings for the brain:
+  + Cellular Encoding [Gruau, 1994]
+  + Axonal Growth in Voxel Space
+  + NEAT [Stanley & Miikkulainen, 2002]
+  + HyperNEAT [Stanley et. al, 2009]
+
 # Writing
 TBD
 
