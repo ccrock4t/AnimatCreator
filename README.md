@@ -21,4 +21,4 @@ Cellular Encoding: [https://www.youtube.com/watch?v=QV04jCyqgBM](https://www.you
 
 NEAT: [https://www.youtube.com/watch?v=teN8nszO0kk](https://www.youtube.com/watch?v=teN8nszO0kk)
 
-HyperNEAT: [https://www.youtube.com/watch?v=rvckN2DE3pQ](https://www.youtube.com/watch?v=rvckN2DE3pQ)
+HyperNEAT: [https://www.youtube.com/watch?v=NbGKKZ56JVA](https://www.youtube.com/watch?v=NbGKKZ56JVA)
