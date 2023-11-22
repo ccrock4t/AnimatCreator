@@ -17,8 +17,8 @@ TBD
 
 # Videos
 
-Cellular Encoding: https://www.youtube.com/watch?v=QV04jCyqgBM
+Cellular Encoding: [https://www.youtube.com/watch?v=QV04jCyqgBM](https://www.youtube.com/watch?v=QV04jCyqgBM)
 
-NEAT: https://www.youtube.com/watch?v=teN8nszO0kk
+NEAT: [https://www.youtube.com/watch?v=teN8nszO0kk](https://www.youtube.com/watch?v=teN8nszO0kk)
 
-HyperNEAT: https://www.youtube.com/watch?v=QmUhobecW-M
+HyperNEAT: [https://www.youtube.com/watch?v=rvckN2DE3pQ](https://www.youtube.com/watch?v=rvckN2DE3pQ)
