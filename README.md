@@ -6,6 +6,7 @@ You can select one of various Genetic Encodings for the brain:
   + Simple Geometry-Oriented Variation of Cellular Encoding (SGOCE) [Kodjabachian & Meyer, 1998]
   + NEAT [Stanley & Miikkulainen, 2002]
   + HyperNEAT [Stanley et. al, 2009]
+  + ES-HyperNEAT [Risi & Stanley, 2012]
 
 # Writing
 TBD
@@ -17,8 +18,10 @@ TBD
 
 # Videos
 
-Cellular Encoding: [https://www.youtube.com/watch?v=QV04jCyqgBM](https://www.youtube.com/watch?v=QV04jCyqgBM)
+Cellular Encoding: [https://www.youtube.com/watch?v=yyDE7w-ajMA](https://www.youtube.com/watch?v=yyDE7w-ajMA)
 
-NEAT: [https://www.youtube.com/watch?v=teN8nszO0kk](https://www.youtube.com/watch?v=teN8nszO0kk)
+NEAT: [https://www.youtube.com/watch?v=3PsT3HhZ-AA](https://www.youtube.com/watch?v=3PsT3HhZ-AA)
 
 HyperNEAT: [https://www.youtube.com/watch?v=NbGKKZ56JVA](https://www.youtube.com/watch?v=NbGKKZ56JVA)
+
+ES-HyperNEAT: [https://www.youtube.com/watch?v=yJtEJzYPpl0](https://www.youtube.com/watch?v=yJtEJzYPpl0)
