@@ -13,7 +13,8 @@ TBD
 
 # Screenshots
 
-![screenshot](https://github.com/ccrock4t/AnimatCreator/assets/15344554/11455ffd-afe8-435f-b6d0-6abf650a74aa)
+![screenshot](https://github.com/ccrock4t/AnimatCreator/assets/15344554/e207c832-250b-4b73-8dd1-1d17c0e06898)
+
 
 
 # Videos
