@@ -9,7 +9,7 @@ You can select one of various Genetic Encodings for the brain:
   + ES-HyperNEAT [Risi & Stanley, 2012]
 
 # Reading materials
-![Evolving Hebbian Neural Networks for Articulated Robot Locomotion](https://cis.temple.edu/tagit/publications/TAGIT-TR-20.pdf)
+[Evolving Hebbian Neural Networks for Articulated Robot Locomotion](https://cis.temple.edu/tagit/publications/TAGIT-TR-20.pdf)
 
 # Screenshots
 
