@@ -13,7 +13,7 @@ public class GlobalConfig : MonoBehaviour
     public enum BrainGenomeMethod
     {
         CellularEncoding,
-        AxonalGrowth,
+        SGOCE,
         NEAT,
         HyperNEAT,
         ESHyperNEAT
@@ -51,7 +51,7 @@ public class GlobalConfig : MonoBehaviour
     // === Animat brain ===
     public static ProcessingMethod brain_processing_method = ProcessingMethod.CPU;
     public static ProcessingMethod brain_genome_development_processing_method = ProcessingMethod.CPU;
-    public static BrainGenomeMethod brain_genome_method = BrainGenomeMethod.HyperNEAT;
+    public static BrainGenomeMethod brain_genome_method = BrainGenomeMethod.NEAT;
 
     public static float ANIMAT_BRAIN_UPDATE_PERIOD = 0.2f; // must be a multiple to Time.fixedDeltaTime (default=0.02)
     public static float BRAIN_VIEWER_UPDATE_PERIOD = 0.2f;
@@ -64,6 +64,12 @@ public class GlobalConfig : MonoBehaviour
     public const bool USE_FORCE_MODE = false;
     // ============
 
+    // === Saving and loading ===
+    public const string save_file_path = "SaveFiles/";
+    public const string save_file_base_name = "myfile";
+    public const string open_string = "[";
+    public const string close_string = "]";
+    // ============
 
     private void Awake()
     {

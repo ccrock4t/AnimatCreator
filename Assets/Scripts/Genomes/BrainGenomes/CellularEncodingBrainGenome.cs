@@ -358,7 +358,13 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
 
 
         // Create Body Joint Motor (BJM)
-        ProgramSymbolTree BJM = new(CECellularInstruction.END);
+        A = new(CECellularInstruction.END);
+        B = new(CECellularInstruction.END);
+
+        A0 = new(CECellularInstruction.PARALLEL_DIVISION, new ProgramSymbolTree[] { A, B });
+        B0 = new(CECellularInstruction.END);
+
+        ProgramSymbolTree BJM = new(CECellularInstruction.PARALLEL_DIVISION, new ProgramSymbolTree[] { A0, B0 });
         BJM.SetTreeIndex(index--);
 
         // Next, create Leg Joint Motor (LJM).
@@ -1044,12 +1050,13 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
         {
             TreeDevelopmentNeuron cell = (TreeDevelopmentNeuron)developed_brain[i];
 
-            Neuron neuron = new Neuron(threshold: cell.threshold,
+            Neuron neuron = new(threshold: cell.threshold,
                 bias: cell.bias,
                 adaptation_delta: cell.adaptation_delta,
                 decay_rate_tau: cell.decay,
                 sign: cell.sign,
-                sigmoid_alpha: cell.sigmoid_alpha);
+                sigmoid_alpha: cell.sigmoid_alpha,
+                activation_function: Neuron.NeuronActivationFunction.Tanh);
 
             Vector3Int position = gui_graph.data_to_position[cell];
             neuron.position = new int3(position.x, position.y, position.z);
@@ -1237,16 +1244,6 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
         return (final_brain_neurons.ToNativeArray<Neuron>(Allocator.Persistent), final_brain_synapses.ToNativeArray<Synapse>(Allocator.Persistent));
     }
 
-    public override int[] ArgumentRange(object instruction)
-    {
-        switch ((CECellularInstruction)instruction)
-        {
-            case CECellularInstruction.JUMP:
-                return new int[] { -this.forest.Count, this.forest.Count };
-            default:
-                return new int[0];
-        }
-    }
 
     public override (ComputeBuffer, ComputeBuffer) DevelopGPU(Dictionary<string, Dictionary<string, int>> neuron_indices)
     {
@@ -1255,11 +1252,12 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
 
     public override JobHandle ScheduleDevelopCPUJob()
     {
-        throw new NotImplementedException();
+        return new JobHandle();
     }
 
     public override void ScheduleDevelopGPUJob()
     {
         throw new NotImplementedException();
     }
+
 }

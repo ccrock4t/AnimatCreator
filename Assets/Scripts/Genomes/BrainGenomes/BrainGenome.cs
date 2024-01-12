@@ -11,11 +11,7 @@ public abstract class BrainGenome
     /// <summary>
     /// SAVE AND LOAD BRAIN GENOMES
     /// </summary>
-    public const string save_file_path = "SaveFiles/";
-    public const string save_file_base_name = "myfile";
-    public const string save_file_extension = ".GenomeBrain";
-    public const string open_string = "[";
-    public const string close_string = "]";
+
 
     public const int INVALID_NEAT_ID = -9999;
     public const int OUTPUT_TEMP_LAYER_ID = -1;
@@ -32,8 +28,6 @@ public abstract class BrainGenome
     public abstract (NativeArray<Neuron>, NativeArray<Synapse>) DevelopCPU(Dictionary<string, Dictionary<string, int>> neuron_indices);
     public abstract (ComputeBuffer, ComputeBuffer) DevelopGPU(Dictionary<string, Dictionary<string, int>> neuron_indices);
     public abstract BrainGenome Clone();
-
-    public abstract BrainGenome LoadFromDisk();
 
     public abstract void SaveToDisk();
 
@@ -96,7 +90,7 @@ public abstract class BrainGenome
             this.sigmoid_alpha = sigmoid_alpha;
         }
 
-        public DevelopmentNeuron Clone()
+        public virtual DevelopmentNeuron Clone()
         {
             DevelopmentNeuron clone = new(this.threshold,
                 this.bias,

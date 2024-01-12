@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
@@ -16,6 +17,7 @@ public abstract class Brain
     public Dictionary<string, Dictionary<string, int>> neuron_indices; // SENSORY/MOTOR --> { LEG/BODY_segment# --> neuron indices }
     public const string SENSORY_NEURON_KEY = "SENSORY";
     public const string MOTOR_NEURON_KEY = "MOTOR";
+    public const string save_file_extension = ".Brain";
 
     public List<DevelopmentNeuron> developed_brain;
 
@@ -43,6 +45,8 @@ public abstract class Brain
     public abstract int GetNumberOfNeurons();
 
     public abstract int GetNumberOfSynapses();
+
+    public abstract void SaveToDisk();
 
 
     public void ScheduleDevelopJob(BrainGenome genome)
@@ -125,7 +129,6 @@ public abstract class Brain
     }
 
 
-
     [System.Serializable]
     public struct Synapse
     {
@@ -186,7 +189,8 @@ public abstract class Brain
         {
             Sigmoid,
             Tanh,
-            LeakyReLU
+            LeakyReLU,
+            ReLU
         }
 
 
@@ -218,7 +222,7 @@ public abstract class Brain
         // metadata
         public int synapse_start_idx;
         public int synapse_count;
-        public int3 position;
+        public float3 position;
 
         public int real_num_of_synapses;
 
@@ -229,7 +233,7 @@ public abstract class Brain
             float sigmoid_alpha,
             bool sign,
             NeuronType type = NeuronType.Perceptron,
-            NeuronActivationFunction activation_function = NeuronActivationFunction.Sigmoid)
+            NeuronActivationFunction activation_function = NeuronActivationFunction.Tanh)
         {
             this.type = type;
             this.activation_function = activation_function;
@@ -274,7 +278,7 @@ public abstract class Brain
 
         public float ReLUSum(float sum)
         {
-            return math.max(0, sum);
+            return math.max(0, sigmoid_alpha * sum);
         }
 
         public float LeakyReLUSum(float sum)
@@ -285,7 +289,7 @@ public abstract class Brain
             }
             else
             {
-                return sum;
+                return sigmoid_alpha * sum;
             }
             
         }

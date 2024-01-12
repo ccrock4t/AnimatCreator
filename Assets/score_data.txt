@@ -1,1 +1,3 @@
 Generation,Average Score in Generation,Max Score in Generation,High Score of All Time
+0,2.328923,2.511665,0
+1,2.373796,2.508587,2.511665

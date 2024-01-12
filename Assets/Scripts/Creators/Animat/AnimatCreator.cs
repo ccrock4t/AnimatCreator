@@ -12,6 +12,8 @@ using static GlobalConfig;
 using Unity.Mathematics;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEditor;
+using System.Threading.Tasks;
+using Unity.Entities.UniversalDelegates;
 
 public class AnimatCreator : MonoBehaviour
 {
@@ -60,9 +62,10 @@ public class AnimatCreator : MonoBehaviour
     // dynamic vars
     int current_generation_num;
     float high_score;
-    float timer;
+    public float timer;
 
     // constants
+    [SerializeField]
     public int NUM_IN_GENERATION;
 
     [SerializeField]
@@ -78,11 +81,10 @@ public class AnimatCreator : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        JobsUtility.JobWorkerCount = SystemInfo.processorCount - 1; // number of CPU cores minus 1. This prevents Unity from going overthrottling the CPU (https://thegamedev.guru/unity-performance/job-system-excessive-multithreading/)
+        JobsUtility.JobWorkerCount = 31; // number of CPU cores minus 1. This prevents Unity from going overthrottling the CPU (https://thegamedev.guru/unity-performance/job-system-excessive-multithreading/)
 
         this.current_generation = new();
 
-        this.NUM_IN_GENERATION = 10;
 
         if (File.Exists(data_filename))
         {
@@ -118,16 +120,16 @@ public class AnimatCreator : MonoBehaviour
             // make initial genomes
             for (int i = 0; i < NUM_IN_GENERATION; i++)
             {
-                brain_genome = CreateDefaultBrainGenome();
+                brain_genome = Animat.CreateTestBrainGenome();
                 brain_genome.Mutate();
                 offspring.Add((brain_genome, body));
-                
+
             }
             this.high_score_genome = (offspring[0].Item1.Clone(), body);
         }
         else if (this.mode == Mode.Manual)
         {
-            brain_genome = CreateDefaultBrainGenome();
+            brain_genome = Animat.CreateTestBrainGenome();
             BodyGenome body = new BodyGenome(Creature.Bug);
             offspring.Add((brain_genome, body));
         }
@@ -136,7 +138,7 @@ public class AnimatCreator : MonoBehaviour
             Debug.LogError("ERROR: Mode not supported.");
         }
 
-        SpawnGenomes(offspring,initial: true);
+        SpawnGenomes(offspring, initial: true);
         UpdateHighScoreText();
         UpdateCurrentGenerationNumberText();
         this.handles = new NativeList<JobHandle>(Allocator.Persistent);
@@ -148,17 +150,16 @@ public class AnimatCreator : MonoBehaviour
     NativeList<JobHandle> handles;
     public void FixedUpdate()
     {
-        if (!this.handles.IsCreated) return;
 
         animat_brain_timer -= Time.fixedDeltaTime;
-        
+
         if (animat_brain_timer <= 0)
         {
             if (GlobalConfig.brain_processing_method == ProcessingMethod.CPU)
             {
                 all_handles.Complete();
             }
-            
+
             handles.Clear();
             foreach (Animat animat in this.current_generation)
             {
@@ -167,7 +168,7 @@ public class AnimatCreator : MonoBehaviour
                 handles.Add(((BrainCPU)animat.brain).update_job_handle);
             }
             all_handles = JobHandle.CombineDependencies(handles.AsArray());
-            
+
             this.animat_brain_timer = GlobalConfig.ANIMAT_BRAIN_UPDATE_PERIOD;
         }
 
@@ -175,52 +176,10 @@ public class AnimatCreator : MonoBehaviour
         {
             animat.MotorEffect();
         }
-        
+
 
     }
 
-
-
-
-    NEATBrainGenome neat_genome;
-    BrainGenome CreateDefaultBrainGenome()
-    {
-        if (GlobalConfig.brain_genome_method == BrainGenomeMethod.CellularEncoding)
-        {
-            return CellularEncodingBrainGenome.CreateBrainGenomeWithHexapodConstraints(); // BrainGenome.LoadFromDisk(); 
-        }
-        else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.AxonalGrowth)
-        {
-            return AxonalGrowthBrainGenome.CreateTestGenome();
-        }
-        else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.NEAT)
-        {
-            if (neat_genome == null)
-            {
-                neat_genome = NEATBrainGenome.CreateTestGenome();
-                return neat_genome;
-            }
-            else {
-                
-                return neat_genome.Clone();
-            }
-
-        }
-        else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.HyperNEAT)
-        {
-            return HyperNEATBrainGenome.CreateTestGenome();
-        }
-        else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.ESHyperNEAT)
-        {
-            GlobalUtils.LogErrorFeatureNotImplemented("ESHyperNEAT");
-            return null;
-        }
-        else
-        {
-            Debug.LogError("Invalid genome method");
-            return null;
-        }
-    }
 
 
     float max_energy = 0;
@@ -228,9 +187,9 @@ public class AnimatCreator : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
 
-        if(this.mode == Mode.Evolution)
+
+        if (this.mode == Mode.Evolution)
         {
             this.timer -= Time.deltaTime;
             if (this.timer < 0f)
@@ -264,17 +223,22 @@ public class AnimatCreator : MonoBehaviour
                     offspring = new();
                     int i = 0;
                     int j = 0;
-                   // (BrainGenome, BodyGenome) mutated_high_score_genome = (this.high_score_genome.Item1.Clone(), this.high_score_genome.Item2);
-                   // mutated_high_score_genome.Item1.Mutate();
-                   // offspring.Add((mutated_high_score_genome)); // add the overall highest score, slightly mutated
-                    while (offspring.Count < NUM_IN_GENERATION)
+                    // (BrainGenome, BodyGenome) mutated_high_score_genome = (this.high_score_genome.Item1.Clone(), this.high_score_genome.Item2);
+                    // mutated_high_score_genome.Item1.Mutate();
+                    // offspring.Add((mutated_high_score_genome)); // add the overall highest score, slightly mutated
+                    bool add_more_offspring()
                     {
-                        offspring.Add(offspring1[i++]);
-                        if (offspring.Count == NUM_IN_GENERATION) break;
-                        offspring.Add(offspring2[j++]);
+                        return offspring.Count < NUM_IN_GENERATION && (i < offspring1.Count || j < offspring2.Count);
+                    }
+                    while (add_more_offspring())
+                    {
+                        if (i < offspring1.Count) offspring.Add(offspring1[i++]);
+                        if (!add_more_offspring()) break;
+                        if (j < offspring2.Count) offspring.Add(offspring2[j++]);
                     }
                 }
-                else{
+                else
+                {
                     Debug.LogError("Error");
                     return;
                 }
@@ -292,7 +256,7 @@ public class AnimatCreator : MonoBehaviour
         }
         else if (this.mode == Mode.Manual)
         {
-    
+
         }
 
 
@@ -329,9 +293,9 @@ public class AnimatCreator : MonoBehaviour
         }
         else
         {
-            Debug.LogError("Invalid reproductive mode."); 
+            Debug.LogError("Invalid reproductive mode.");
         }
-        
+
     }
 
     /// <summary>
@@ -342,11 +306,11 @@ public class AnimatCreator : MonoBehaviour
         // TODO this
         bool contains = rect1.Contains(Input.mousePosition);
         bool click = Input.GetMouseButtonDown(0);
-       // Debug.Log("contains " + contains + " and click "+ click);
+        // Debug.Log("contains " + contains + " and click "+ click);
         if (contains && click)
         {
             brain_viewer_camera.rect = main_rect;
-            animat_creator_camera.rect = rect1; 
+            animat_creator_camera.rect = rect1;
         }
     }
 
@@ -367,15 +331,15 @@ public class AnimatCreator : MonoBehaviour
             + " and Has " + brain.GetNumberOfSynapses() + " synapses "
             );
 
-       
+
         StaticSceneManager.brain = brain;
         StaticSceneManager.brain_genome = brain.genome;
-        if(this.brain_viewer != null) this.brain_viewer.Initialize();
+        if (this.brain_viewer != null) this.brain_viewer.Initialize();
         if (this.brain_creator != null) this.brain_creator.Initialize();
     }
 
 
-    void SpawnGenomes(List<(BrainGenome, BodyGenome)> current_generation_genomes, bool initial=false)
+    void SpawnGenomes(List<(BrainGenome, BodyGenome)> current_generation_genomes, bool initial = false)
     {
         Debug.Log("Animat Creator: Spawning New Generation.");
 
@@ -383,7 +347,7 @@ public class AnimatCreator : MonoBehaviour
         float y_pos = 0f;
         float z_pos = 0f;
         int index = 0;
-        foreach((BrainGenome brain_genome, BodyGenome body_genome) in current_generation_genomes)
+        foreach ((BrainGenome brain_genome, BodyGenome body_genome) in current_generation_genomes)
         {
 
             Vector3 position = new Vector3(x_pos, y_pos, z_pos);
@@ -392,7 +356,7 @@ public class AnimatCreator : MonoBehaviour
             {
                 //first time spawning, so spawn the training pod
                 GameObject training_pod = Instantiate(this.training_pod_prefab);
-                training_pod.transform.position = position - new Vector3(0,0,2);
+                training_pod.transform.position = position - new Vector3(0, 0, 2);
                 //training_pod.transform.rotation = Quaternion.Euler(-10,0,0); // tilt the pod
                 training_pods.Add((training_pod.transform, training_pod.transform.Find("Food")));
             }
@@ -402,7 +366,6 @@ public class AnimatCreator : MonoBehaviour
 
             Animat animat = new_agent_GO.AddComponent<Animat>();
             animat.Initialize(brain_genome, body_genome);
-            animat.animat_creator = this;
 
             animat.animat_creator_food_block = training_pods[index].Item2;
 
@@ -419,10 +382,10 @@ public class AnimatCreator : MonoBehaviour
             index++;
         }
 
-        if(GlobalConfig.brain_genome_development_processing_method == ProcessingMethod.CPU)
+        if (GlobalConfig.brain_genome_development_processing_method == ProcessingMethod.CPU)
         {
             Stopwatch watch = Stopwatch.StartNew();
-            NativeList <JobHandle> handles = new NativeList<JobHandle>(Allocator.TempJob);
+            NativeList<JobHandle> handles = new NativeList<JobHandle>(Allocator.TempJob);
             foreach (Animat animat in this.current_generation)
             {
                 JobHandle job_handle = animat.brain.genome.ScheduleDevelopCPUJob();
@@ -431,14 +394,32 @@ public class AnimatCreator : MonoBehaviour
             JobHandle all_handles = JobHandle.CombineDependencies(handles.AsArray());
             all_handles.Complete();
             watch.Stop();
-            
-            Debug.Log("develop parallel took " + watch.ElapsedMilliseconds/1000f +" seconds");
+
+            Debug.Log("develop parallel took " + watch.ElapsedMilliseconds / 1000f + " seconds");
             handles.Dispose();
 
-            foreach (Animat animat in this.current_generation)
+            if (GlobalConfig.brain_genome_method == BrainGenomeMethod.ESHyperNEAT)
             {
-                animat.brain.DevelopFromGenome();
+                /*            Parallel.For(0, this.current_generation.Count, i =>
+                            {
+                                Animat animat = this.current_generation[i];
+                                animat.brain.DevelopFromGenome();
+                            });*/
+                foreach (Animat animat in this.current_generation)
+                {
+                    animat.brain.DevelopFromGenome();
+                }
             }
+            else
+            {
+                foreach (Animat animat in this.current_generation)
+                {
+
+                    animat.brain.DevelopFromGenome();
+                }
+            }
+
+
         }
         else
         {
@@ -452,7 +433,7 @@ public class AnimatCreator : MonoBehaviour
 
         // view the brain
         SwitchViewToAnimat(currently_viewed_animat_idx);
-        
+
 
         Debug.Log("Animat Creator: Completed Spawning New Generation.");
     }
@@ -492,15 +473,15 @@ public class AnimatCreator : MonoBehaviour
             {
                 if (offspring.Count >= NUM_IN_GENERATION) break;
                 Animat parent1 = current_generation[mate1_idx];
-               
+
                 (BrainGenome offspring1_brain_genome, BrainGenome offspring2_brain_genome) = parent1.brain_genome.Reproduce(parent2.brain_genome);
-             
+
                 //offspring1_brain_genome.Mutate();
                 //offspring2_brain_genome.Mutate();
 
                 offspring.Add((offspring1_brain_genome, parent1.body_genome));
-                offspring.Add((offspring2_brain_genome, parent1.body_genome)); 
-                
+                offspring.Add((offspring2_brain_genome, parent1.body_genome));
+
             }
         }
 
@@ -534,7 +515,7 @@ public class AnimatCreator : MonoBehaviour
 
         //int num_parents = (int)(.2f * NUM_IN_GENERATION);
         float sum = 0;
-        foreach(Animat agent in current_generation)
+        foreach (Animat agent in current_generation)
         {
             float score = GetAnimatScore(agent);
             if (score < 0) score = 0;
@@ -591,10 +572,10 @@ public class AnimatCreator : MonoBehaviour
         }
 
     }
-  
+
     public void ViewNextAnimat()
     {
-        currently_viewed_animat_idx = MathHelper.mod(currently_viewed_animat_idx + 1,  this.NUM_IN_GENERATION);
+        currently_viewed_animat_idx = MathHelper.mod(currently_viewed_animat_idx + 1, this.NUM_IN_GENERATION);
         SwitchViewToAnimat(currently_viewed_animat_idx);
     }
 
@@ -617,6 +598,17 @@ public class AnimatCreator : MonoBehaviour
 
     float GetAnimatScore(Animat a)
     {
+        /*       foreach(TouchSensor sensor in a.body_segments[0].touch_sensors)
+               {
+                   if (sensor.touching_terrain) return 0;
+               }
+               foreach (TouchSensor sensor in a.body_segments[7].touch_sensors)
+               {
+                   if (sensor.touching_terrain) return 0;
+               }*/
+
+
+
         Transform front_segment = a.GetFrontSegment();
         /*        float energy_ratio = a.energy_used / max_energy; // in [0,1] -- higher energy ratio is worse
                 float energy_score = (1 - energy_ratio); // in [0,1] -- higher is better
@@ -626,7 +618,7 @@ public class AnimatCreator : MonoBehaviour
 
     void KillCurrentGeneration()
     {
-        foreach(Animat agent in this.current_generation)
+        foreach (Animat agent in this.current_generation)
         {
             agent.DiposeOfBrainMemory();
             Destroy(agent.gameObject);
@@ -644,7 +636,8 @@ public class AnimatCreator : MonoBehaviour
 
     void WriteScoreToFile()
     {
-        if (data_file == null) {
+        if (data_file == null)
+        {
             Debug.LogError("No data file write stream.");
         }
 
@@ -652,14 +645,14 @@ public class AnimatCreator : MonoBehaviour
         float max = 0;
         float avg = 0;
         foreach (Animat agent in current_generation)
-        { 
+        {
             float score = GetAnimatScore(agent);
             avg += score;
             max = Mathf.Max(max, score);
         }
         avg /= current_generation.Count;
         data_file = new StreamWriter(data_filename, true);
-        data_file.WriteLine(current_generation_num + "," + avg  + "," + max + "," + this.high_score);
+        data_file.WriteLine(current_generation_num + "," + avg + "," + max + "," + this.high_score);
         data_file.Close();
     }
 
@@ -675,7 +668,12 @@ public class AnimatCreator : MonoBehaviour
     }
 
 
-
+    public void SaveCurrentAnimatBrain()
+    {
+        Animat animat = this.current_generation[currently_viewed_animat_idx];
+        animat.brain_genome.SaveToDisk();
+        animat.brain.SaveToDisk();
+    }
 
 
 }

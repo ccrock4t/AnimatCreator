@@ -402,7 +402,7 @@ public class BodyGenome
 
 
         (Vector3 top_face_position, Vector3 top_face_rotation) = segment_face_positions_and_rotations["+y"];
-        Vector3 body_dimensions = new Vector3(1.0f, 2.5f, 1.25f);
+        Vector3 body_dimensions = new Vector3(1.0f, 2.0f, 0.75f);
         MorphologyNode body_node = new MorphologyNode(dimensions: body_dimensions,
              recursive_limit: rec_limit);
 
@@ -472,7 +472,8 @@ public class BodyGenome
         // make left leg connection
         (Vector3 left_face_position, Vector3 left_face_rotation) = segment_face_positions_and_rotations["-x"];
         Vector3 left_leg_rotation = left_face_rotation;
-        left_leg_rotation.z += 35f;
+        left_leg_rotation.z -= 35f;
+        left_leg_rotation.x += 180;
 
         Vector3 left_leg_body_face_position = Vector3.Scale(left_face_position, body_dimensions);
 

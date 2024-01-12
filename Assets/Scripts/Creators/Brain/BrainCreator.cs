@@ -10,6 +10,7 @@ using UnityEngine.UI;
 using static AxonalGrowthBrainGenome;
 using static BrainGenomeTree;
 using static CellularEncodingBrainGenome;
+using static GlobalUtils;
 using static HyperNEATBrainGenome;
 using static TMPro.TMP_Dropdown;
 
@@ -39,19 +40,19 @@ public class BrainCreator : MonoBehaviour
     {
         if (initialize_on_start)
         {
-            
+
             if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.CellularEncoding)
             {
                 Initialize(CellularEncodingBrainGenome.CreateBrainGenomeWithHexapodConstraints());
 
             }
-            else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.AxonalGrowth)
+            else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.SGOCE)
             {
                 Initialize(AxonalGrowthBrainGenome.CreateTestGenome());
             }
             else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.HyperNEAT)
             {
-                Initialize(HyperNEATBrainGenome.CreateTestGenome());
+                Initialize(RegularHyperNEATBrainGenome.CreateTestGenome());
             }
             else
             {
@@ -97,7 +98,7 @@ public class BrainCreator : MonoBehaviour
             }
 
         }
-        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.AxonalGrowth)
+        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.SGOCE)
         {
             AxonalGrowthCellularInstruction[] array_of_instruction_names = (AxonalGrowthCellularInstruction[])Enum.GetValues(typeof(AxonalGrowthCellularInstruction));
             foreach (AxonalGrowthCellularInstruction instruction in array_of_instruction_names)
@@ -106,7 +107,7 @@ public class BrainCreator : MonoBehaviour
                 list.Add(da[0].Description);
             }
         }
-        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.HyperNEAT)
+        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.HyperNEAT || GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.ESHyperNEAT)
         {
             CPPNFunction[] array_of_instruction_names = (CPPNFunction[])Enum.GetValues(typeof(CPPNFunction));
             foreach (CPPNFunction instruction in array_of_instruction_names)
@@ -115,13 +116,17 @@ public class BrainCreator : MonoBehaviour
                 list.Add(da[0].Description);
             }
         }
+        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.NEAT)
+        {
+            return;
+        }
         else
         {
             Debug.LogError("ERROR: not yet implemented");
             return;
         }
-       
-        
+
+
 
 
         if (this.node_prefab == null) this.node_prefab = (GameObject)Resources.Load("Prefabs/Creators/Brain/Node");
@@ -131,9 +136,9 @@ public class BrainCreator : MonoBehaviour
         if (this.link_prefab == null) this.link_prefab = (GameObject)Resources.Load("Prefabs/Creators/Brain/Link");
         if (this.link_text_prefab == null) this.link_text_prefab = (GameObject)Resources.Load("Prefabs/Creators/Brain/LinkText");
         if (this.pages_button_prefab == null) this.pages_button_prefab = (GameObject)Resources.Load("Prefabs/Creators/Brain/PageButton");
-        
+
         if (this.GUI_tree_nodes == null) this.GUI_tree_nodes = new();
-        if(this.GUI_nodes_dictionary == null) this.GUI_nodes_dictionary = new();
+        if (this.GUI_nodes_dictionary == null) this.GUI_nodes_dictionary = new();
         if (this.pages == null) this.pages = new();
 
 
@@ -143,7 +148,8 @@ public class BrainCreator : MonoBehaviour
             DestroyGUITree(0);
         }
 
-        while (this.pages.Count > 0) { 
+        while (this.pages.Count > 0)
+        {
             GameObject obj = this.pages[0];
             this.pages.RemoveAt(0);
             Destroy(obj);
@@ -161,7 +167,7 @@ public class BrainCreator : MonoBehaviour
         this.GUI_tree_nodes.Clear();
         this.GUI_nodes_dictionary.Clear();
 
-        if(genome is BrainGenomeTree)
+        if (genome is BrainGenomeTree)
         {
             BrainGenomeTree genome_tree = (BrainGenomeTree)genome;
             for (int i = 0; i < genome_tree.forest.Count; i++)
@@ -223,7 +229,7 @@ public class BrainCreator : MonoBehaviour
         Debug.Log("Brain Creator: Initialization Completed.");
     }
 
-    public void DestroyGUITree(int i, bool remove_tree_from_forest=true)
+    public void DestroyGUITree(int i, bool remove_tree_from_forest = true)
     {
         List<BrainCreatorGUITreeNode> gui_tree = this.GUI_tree_nodes[i];
         while (gui_tree.Count > 0)
@@ -233,7 +239,7 @@ public class BrainCreator : MonoBehaviour
             this.GUI_nodes_dictionary.Remove(GUI_node.tree);
             gui_tree.RemoveAt(0);
         }
-        if(remove_tree_from_forest) this.GUI_tree_nodes.RemoveAt(i);
+        if (remove_tree_from_forest) this.GUI_tree_nodes.RemoveAt(i);
     }
 
     public void OpenPage(int page_num)
@@ -243,7 +249,7 @@ public class BrainCreator : MonoBehaviour
         {
             GameObject page_GO = this.pages[i];
             page_GO.SetActive(i == page_num);
-            if(i == page_num) this.active_page_num = i;
+            if (i == page_num) this.active_page_num = i;
         }
     }
 
@@ -258,17 +264,17 @@ public class BrainCreator : MonoBehaviour
 
         Vector2 node_spacing = new(300, 100);
 
-        for (int i=0; i < genome.layers.Count; i++)
+        for (int i = 0; i < genome.layers.Count; i++)
         {
             List<CPPNnode> layer = genome.layers[i];
-            for(int j=0;j < layer.Count; j++)
+            for (int j = 0; j < layer.Count; j++)
             {
                 CPPNnode cppn_node = layer[j];
                 GameObject GUI_node_GO = Instantiate(this.node_prefab, page_transform);
                 Vector3 position = new Vector3(i * node_spacing.x, j * node_spacing.y);
                 RectTransform rect = GUI_node_GO.GetComponent<RectTransform>();
                 rect.anchoredPosition = position;
-                cppnNode_to_rect[cppn_node] = rect; 
+                cppnNode_to_rect[cppn_node] = rect;
                 BrainCreatorGUINode GUI_node = GUI_node_GO.AddComponent<BrainCreatorGUINode>();
                 GUI_node.Initialize();
                 for (int k = 0; k < GUI_node.dropdown.options.Count; k++)
@@ -277,7 +283,7 @@ public class BrainCreator : MonoBehaviour
                     try
                     {
                         int instruction = (int)GlobalUtils.enumValueOf(x.text, typeof(CPPNFunction));
-          
+
 
                         if (instruction == (int)cppn_node.function)
                         {
@@ -304,7 +310,7 @@ public class BrainCreator : MonoBehaviour
             for (int j = 0; j < layer.Count; j++)
             {
                 CPPNnode cppn_node = layer[j];
-                foreach((CPPNnode, CPPNconnection) output in cppn_node.outputs)
+                foreach ((CPPNnode, CPPNconnection) output in cppn_node.outputs)
                 {
                     CPPNconnection connection = output.Item2;
                     if (!connection.enabled) continue;
@@ -332,20 +338,20 @@ public class BrainCreator : MonoBehaviour
 
         BrainCreatorGUITreeNode GUI_node;
 
-        
+
         if (!this.GUI_nodes_dictionary.ContainsKey(tree))
         {
             GameObject GUI_node_GO = Instantiate(this.node_prefab, GUIpage);
             GUI_node = GUI_node_GO.AddComponent<BrainCreatorGUITreeNode>();
             GUI_node_GO.GetComponent<TMP_Dropdown>().onValueChanged.AddListener(delegate {
                 GUI_node.InstructionChanged();
-                });
+            });
             GUI_node.Initialize(tree);
             GUI_node.Subscribe(this);
             list.Add(GUI_node);
             this.GUI_nodes_dictionary[GUI_node.tree] = GUI_node;
 
-            for(int i=0; i<  GUI_node.dropdown.options.Count; i++)
+            for (int i = 0; i < GUI_node.dropdown.options.Count; i++)
             {
                 OptionData x = GUI_node.dropdown.options[i];
                 try
@@ -356,7 +362,7 @@ public class BrainCreator : MonoBehaviour
                         // continue
                         instruction = (int)GlobalUtils.enumValueOf(x.text, typeof(CECellularInstruction));
                     }
-                    else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.AxonalGrowth)
+                    else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.SGOCE)
                     {
                         instruction = (int)GlobalUtils.enumValueOf(x.text, typeof(AxonalGrowthCellularInstruction));
                     }
@@ -365,7 +371,7 @@ public class BrainCreator : MonoBehaviour
                         Debug.LogError("Not supported.");
                         return null;
                     }
-                    
+
                     if (instruction == (int)tree.instruction)
                     {
                         GUI_node.dropdown.value = i;
@@ -377,7 +383,7 @@ public class BrainCreator : MonoBehaviour
                 {
                     Debug.LogError("No enum for " + x.text);
                 }
-                
+
 
             }
         }
@@ -401,7 +407,7 @@ public class BrainCreator : MonoBehaviour
 
         return GUI_node;
     }
-    
+
     // FILE helpers
 
     public void SaveCurrentGenomeToDisk()
@@ -410,7 +416,8 @@ public class BrainCreator : MonoBehaviour
     }
 
 
-    public void LoadGenomeFromDisk() {
+    public void LoadGenomeFromDisk()
+    {
 
         Debug.LogError("TODO");
         //BrainGenomeTree genome = BrainGenomeTree.LoadFromDisk();
@@ -434,7 +441,7 @@ public class BrainCreator : MonoBehaviour
         BrainCreatorGUITreeNode root_node = this.GUI_nodes_dictionary[root];
         list.Add(root_node);
 
-        foreach(ProgramSymbolTree child in root.children)
+        foreach (ProgramSymbolTree child in root.children)
         {
             List<BrainCreatorGUITreeNode> subtree = GetListOfGUINodes(child);
             foreach (BrainCreatorGUITreeNode GUI_node in subtree)
@@ -448,7 +455,7 @@ public class BrainCreator : MonoBehaviour
 
     public void DestroyGUINode(BrainCreatorGUITreeNode node)
     {
-        if(node.link_to_parent != null)
+        if (node.link_to_parent != null)
         {
             Destroy(node.link_to_parent.gameObject);
         }
@@ -464,11 +471,11 @@ public class BrainCreator : MonoBehaviour
     /// <param name="to"></param>
     public void NodeChanged(BrainCreatorGUITreeNode changed_GUI_node, object from, object to)
     {
-        if(GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.CellularEncoding)
+        if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.CellularEncoding)
         {
             if ((CECellularInstruction)from == (CECellularInstruction)to) return;
         }
-        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.AxonalGrowth)
+        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.SGOCE)
         {
             if ((AxonalGrowthCellularInstruction)from == (AxonalGrowthCellularInstruction)to) return;
         }
@@ -476,16 +483,16 @@ public class BrainCreator : MonoBehaviour
         {
             Debug.LogError("");
         }
-        
+
 
         int from_children, to_children;
 
         if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.CellularEncoding)
-             {
+        {
             from_children = CellularEncodingBrainGenome.HowManyChildren(from);
             to_children = CellularEncodingBrainGenome.HowManyChildren(to);
         }
-        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.AxonalGrowth)
+        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.SGOCE)
         {
             from_children = AxonalGrowthBrainGenome.HowManyChildren(from);
             to_children = AxonalGrowthBrainGenome.HowManyChildren(to);
@@ -497,7 +504,7 @@ public class BrainCreator : MonoBehaviour
         }
 
 
-        if(this.current_genome is BrainGenomeTree)
+        if (this.current_genome is BrainGenomeTree)
         {
             changed_GUI_node.tree.ChangeInstruction(to, new int[0]);
             if (from_children == to_children) return; // done if the amount of children is the same, since children will not change
@@ -567,8 +574,8 @@ public class BrainCreator : MonoBehaviour
     /// <param name="tree"></param>
     public void LayoutGUITrees()
     {
-        
-        if(this.current_genome == null)
+
+        if (this.current_genome == null)
         {
             Debug.LogWarning("Attempted to layout null genome.");
             return;
@@ -578,7 +585,7 @@ public class BrainCreator : MonoBehaviour
 
         BrainGenomeTree genome = (BrainGenomeTree)this.current_genome;
 
-        for (int i = 0; i< genome.forest.Count; i++)
+        for (int i = 0; i < genome.forest.Count; i++)
         {
             ProgramSymbolTree root = genome.forest[i];
 
@@ -598,9 +605,9 @@ public class BrainCreator : MonoBehaviour
                 GUI_node.SetPosition(GUI_root.position_data_2D.x);
             }
         }
-  
 
-        
+
+
 
     }
 

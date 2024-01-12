@@ -1,22 +1,29 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization.Formatters.Binary;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 using static Brain;
 using static GlobalConfig;
+using static HyperNEATBrainGenome;
 using static UnityEngine.Random;
 
-public class HyperNEATBrainGenome : BrainGenome
+public abstract class HyperNEATBrainGenome : BrainGenome
 {
     const bool INITIALIZE_FULLY_CONNECT_CPPN = true;
     const bool ALLOW_MULTIPLE_MUTATIONS = false;
     const bool STACK_MUTATIONS = false;
     const bool ALLOW_RECURRENT_CONNECTIONS = false;
     const bool INCLUDE_EXTRA_CPPN_FUNCTIONS = false;
+
+
+    const float INITIAL_HIDDEN_CPPN_NODES = 25;
 
     public const float ADD_CONNECTION_MUTATION_RATE = 0.12f;
     public const float ADD_NODE_MUTATION_RATE = 0.08f;
@@ -27,14 +34,22 @@ public class HyperNEATBrainGenome : BrainGenome
     public const float CHANGE_NODE_FUNCTION_MUTATION_RATE = 0.1f;
     public const float WEIGHT_MUTATE_INCREMENT = 0.025f;
 
+    // cppn output multipliers
+    public const float multiplier = 0.1f;
+    public const float ABCD_multiplier = 0.5f;//0.05f;
+
     bool BFS_for_CPPN_layers = false; // true for BFS, false for DFS
 
     public int3 substrate_dimensions;
     public int substrate_dimensions_size;
 
+    public int num_of_joints;
+
     public List<CPPNnode> cppn_nodes;
     public List<CPPNconnection> cppn_connections;
     public List<List<CPPNnode>> layers;
+    public CPPNnodeParallel[] CPPN_nodes;
+    public CPPNconnectionParallel[] CPPN_connections;
 
     public DevelopmentNeuron[] substrate;
 
@@ -59,21 +74,9 @@ public class HyperNEATBrainGenome : BrainGenome
     CPPNnode sign_output_node;
     CPPNnode LEO_connection_enabled_node;
 
-    static int2 sensorimotor_idxs;
+    public static int2 sensorimotor_idxs;
 
 
-    // CPU variables
-    NativeArray<Neuron> final_brain_neurons;
-    NativeArray<Synapse> final_brain_synapses;
-
-    // GPU variables
-    int main_kernel;
-    static ComputeShader hyperneat_compute_shader_static;
-    ComputeShader hyperneat_compute_shader;
-    public ComputeBuffer neurons_compute_buffer;
-    public ComputeBuffer synapses_compute_buffer;
-    public ComputeBuffer CPPN_node_compute_buffer;
-    public ComputeBuffer CPPN_connection_compute_buffer;
 
 
     public enum CPPNFunction
@@ -103,61 +106,18 @@ public class HyperNEATBrainGenome : BrainGenome
         
     }
 
-    int num_of_joints;
+
     public HyperNEATBrainGenome()
     {
         this.num_of_joints = GlobalConfig.creature_to_use == Creature.Hexapod ? 21 : 14; // hexapod or quadruped
         this.brain_update_period = GlobalConfig.ANIMAT_BRAIN_UPDATE_PERIOD;
-        this.substrate_dimensions = new int3(this.num_of_joints, 10, 4);
-        this.substrate_dimensions_size = substrate_dimensions.x * substrate_dimensions.y * substrate_dimensions.z;
-        this.substrate = new DevelopmentNeuron[this.substrate_dimensions_size];
 
         this.cppn_nodes = new();
         this.cppn_connections = new();
         this.layers = new();
-
-        this.InsertHexapodSensorimotorNeurons();
-
     }
 
-    public void GPU_Setup()
-    {
-        Debug.LogError("implement to match CPU");
-        if (HyperNEATBrainGenome.hyperneat_compute_shader_static == null)
-        {
-            HyperNEATBrainGenome.hyperneat_compute_shader_static = (ComputeShader)Resources.Load("ParallelHyperNEATGPU");
-        }
-
-        // set vars
-        hyperneat_compute_shader = (ComputeShader)GameObject.Instantiate(hyperneat_compute_shader_static);
-        hyperneat_compute_shader.SetInt("SUBSTRATE_SIZE_X", this.substrate_dimensions.x);
-        hyperneat_compute_shader.SetInt("SUBSTRATE_SIZE_Y", this.substrate_dimensions.y);
-        hyperneat_compute_shader.SetInt("SUBSTRATE_SIZE_Z", this.substrate_dimensions.z);
-        hyperneat_compute_shader.SetInt("NUM_OF_NODES", this.cppn_nodes.Count);
-        hyperneat_compute_shader.SetInt("OUTPUT_NODES_START_IDX", sensorimotor_idxs.x);
-        hyperneat_compute_shader.SetInt("OUTPUT_NODES_END_IDX", sensorimotor_idxs.y);
-        
-        // create brain buffers
-        neurons_compute_buffer = new(count: substrate_dimensions_size, stride: Marshal.SizeOf(typeof(Neuron)));
-        synapses_compute_buffer = new(count: substrate_dimensions_size * substrate_dimensions_size, stride: Marshal.SizeOf(typeof(Synapse)));
-
-        
-        this.main_kernel = hyperneat_compute_shader.FindKernel("CSMain");
-        hyperneat_compute_shader.SetBuffer(this.main_kernel, "neurons", this.neurons_compute_buffer);
-        hyperneat_compute_shader.SetBuffer(this.main_kernel, "synapses", this.synapses_compute_buffer);
-
-        // convert CPPN into a Parallel version 
-        this.CPPN_node_compute_buffer = new(count: this.cppn_nodes.Count * substrate_dimensions_size * substrate_dimensions_size, stride: Marshal.SizeOf(typeof(CPPNnodeParallel)));
-
-        Debug.LogError("todo: create buffer of floats for CPPN output size substrate_dimensions_size * substrate_dimensions_size, since CPPN nodes is now too small");
-        (CPPNnodeParallel[] node_buffer_write_array, CPPNconnectionParallel[] connection_buffer_write_array) = ConvertCPPNToParallel();
-        this.CPPN_connection_compute_buffer = new(count: connection_buffer_write_array.Length, stride: Marshal.SizeOf(typeof(CPPNconnectionParallel)));
-
-        CPPN_node_compute_buffer.SetData(node_buffer_write_array);
-        CPPN_connection_compute_buffer.SetData(connection_buffer_write_array);
-        hyperneat_compute_shader.SetBuffer(this.main_kernel, "CPPN_nodes", CPPN_node_compute_buffer);
-        hyperneat_compute_shader.SetBuffer(this.main_kernel, "CPPN_connections", CPPN_connection_compute_buffer);
-    }
+   
 
     /// <summary>
     /// 
@@ -300,7 +260,7 @@ public class HyperNEATBrainGenome : BrainGenome
         if (NEXT_NEURON_ID == BrainGenome.INVALID_NEAT_ID) NEXT_NEURON_ID = this.cppn_nodes.Count;
         if (NEXT_SYNAPSE_ID == BrainGenome.INVALID_NEAT_ID) NEXT_SYNAPSE_ID = this.cppn_connections.Count;
 
-        for (int j = 0; j < 25; j++)
+        for (int j = 0; j < INITIAL_HIDDEN_CPPN_NODES; j++)
         {
             AddNewRandomNode();
         }
@@ -313,68 +273,31 @@ public class HyperNEATBrainGenome : BrainGenome
         WriteToSubstrate(coords.x, coords.y, coords.z, neuron);
     }
 
-    public DevelopmentNeuron ReadFromSubstrate(int x, int y, int z)
-    {
-        return this.substrate[VoxelUtils.Index_FlatFromint3(x, y, z, this.substrate_dimensions)];
-    }
+    public abstract DevelopmentNeuron ReadFromSubstrate(int x, int y, int z);
 
-    public void WriteToSubstrate(int x, int y, int z, DevelopmentNeuron neuron)
-    {
-        this.substrate[VoxelUtils.Index_FlatFromint3(x, y, z, this.substrate_dimensions)] = neuron;
-    }
-
-    public void InsertHexapodSensorimotorNeurons()
-    {
-
-        // insert sensory neurons
-        for (int x = 0; x < this.num_of_joints; x++) // joints in hexapod
-        {
-            string joint_key = Animat.GetSensorimotorJointKey(x);
-
-            int3 coords = new int3(x, 0, 0);
-            // 10 for the sensor
-            this.InsertNeuron(coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_LLL");
-            coords.y++;
-            this.InsertNeuron(coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_LLR");
-            coords.y++;
-            this.InsertNeuron(coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_LR");
-            coords.y++;
-            this.InsertNeuron(coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_RL");
-            coords.y++;
-            this.InsertNeuron(coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_RRL");
-            coords.y++;
-            this.InsertNeuron(coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_RRR");
-            coords.y++;
-            this.InsertNeuron(coords, extradata: "SENSORLAYER_" + joint_key + "_ROTATESENSE" + "_LL");
-            coords.y++;
-            this.InsertNeuron(coords, extradata: "SENSORLAYER_" + joint_key + "_ROTATESENSE" + "_LR");
-            coords.y++;
-            this.InsertNeuron(coords, extradata: "SENSORLAYER_" + joint_key + "_ROTATESENSE" + "_RL");
-            coords.y++;
-            this.InsertNeuron(coords, extradata: "SENSORLAYER_" + joint_key + "_ROTATESENSE" + "_RR");
-        }
+    public abstract void WriteToSubstrate(int x, int y, int z, DevelopmentNeuron neuron);
 
 
-        // insert motor neurons
-        for (int x = 0; x < this.num_of_joints; x++) 
-        {
-            string joint_key = Animat.GetSensorimotorJointKey(x);
-
-            // 3 for the motor
-            int3 coords = new int3(x, 0, this.substrate_dimensions.z - 1);
-            this.InsertNeuron(coords, extradata: "MOTORLAYER_" + joint_key + "_LL");
-            coords.y += 4;
-            this.InsertNeuron(coords, extradata: "MOTORLAYER_" + joint_key + "_LR");
-            coords.y += 4;
-            this.InsertNeuron(coords, extradata: "MOTORLAYER_" + joint_key + "_R");
-
-        }
-
-    }
+    public abstract void InsertHexapodSensorimotorNeurons();
 
     public override BrainGenome Clone()
     {
-        HyperNEATBrainGenome genome = new();
+        HyperNEATBrainGenome genome;
+        if (this is RegularHyperNEATBrainGenome)
+        {
+            genome = new RegularHyperNEATBrainGenome();
+
+        }
+        else if(this is ESHyperNEATBrainGenome)
+        {
+            genome = new ESHyperNEATBrainGenome();
+        }
+        else
+        {
+            Debug.LogError("error");
+            return null;
+        }
+       
 
         foreach(CPPNnode n in this.cppn_nodes)
         {
@@ -391,15 +314,7 @@ public class HyperNEATBrainGenome : BrainGenome
 
     }
 
-    public static HyperNEATBrainGenome CreateTestGenome()
-    {
-        HyperNEATBrainGenome genome = new();
-        genome.SetCPPNnodesForIO();
-        genome.FinalizeCPPN();
 
-        return genome;
-        
-    }
 
     public static CPPNFunction GetRandomCPPNfunction()
     {
@@ -421,293 +336,15 @@ public class HyperNEATBrainGenome : BrainGenome
         connection.enabled = false;
     }
 
-    public override (ComputeBuffer, ComputeBuffer) DevelopGPU(Dictionary<string, Dictionary<string, int>> neuron_indices)
-    {
-        // ComputeBuffer 
-        GPU_Setup();
-
-       
-        int remaining_items = this.synapses_compute_buffer.count;
-
-        int i = 0;
-        int max_items_processed_per_dispatch = GlobalConfig.MAX_NUM_OF_THREAD_GROUPS * GlobalConfig.NUM_OF_GPU_THREADS;
-        while (remaining_items > 0)
-        {
-            hyperneat_compute_shader.SetInt("index_offset", i * max_items_processed_per_dispatch);
-            if (remaining_items <= max_items_processed_per_dispatch)
-            {
-                hyperneat_compute_shader.Dispatch(this.main_kernel, Mathf.CeilToInt(remaining_items / GlobalConfig.NUM_OF_GPU_THREADS), 1, 1);
-                remaining_items = 0;
-                break;
-            }
-            else
-            {
-                hyperneat_compute_shader.Dispatch(this.main_kernel, GlobalConfig.MAX_NUM_OF_THREAD_GROUPS, 1, 1);
-                remaining_items -= max_items_processed_per_dispatch;
-            }
-            i++;
-        }
-
-        LabelNeurons(neuron_indices);
-
-
-        return (neurons_compute_buffer, synapses_compute_buffer);
-    }
-
-    public void LabelNeurons(Dictionary<string, Dictionary<string, int>> neuron_indices)
-    {
-        Neuron[] gpu_neuron_array = null;
-        if (GlobalConfig.brain_genome_development_processing_method == ProcessingMethod.GPU)
-        {
-            gpu_neuron_array = new Neuron[this.neurons_compute_buffer.count];
-            this.neurons_compute_buffer.GetData(gpu_neuron_array);
-        }
-        
-
-        int[] arr = new[] { 0, 0, 0 };
-
-        string[] strings;
-        string neuron_type;
-        string sensor_type;
-        for (int z = 0; z < substrate_dimensions.z; z++)
-        {
-            for (int y = 0; y < substrate_dimensions.y; y++)
-            {
-                for (int x = 0; x < substrate_dimensions.x; x++)
-                {
-                    int3 cell_idx = new int3(x, y, z);
-                    int cell_idx_flat = VoxelUtils.Index_FlatFromint3(cell_idx, substrate_dimensions);
-
-                    DevelopmentNeuron cell = this.substrate[cell_idx_flat];
-
-                    Neuron neuron;
-                    if (GlobalConfig.brain_genome_development_processing_method == ProcessingMethod.CPU)
-                    {
-                        neuron = this.final_brain_neurons[cell_idx_flat];
-                    }
-                    else if (GlobalConfig.brain_genome_development_processing_method == ProcessingMethod.GPU)
-                    {
-                        neuron = gpu_neuron_array[cell_idx_flat];
-                    }
-                    else
-                    {
-                        Debug.LogError("error");
-                        return;
-                    }
-
-                    neuron.position = cell_idx;
-
-                    
-
-                    if (cell != null && cell.extradata != "")
-                    {
-
-                        strings = cell.extradata.Split("_");
-                        neuron_type = strings[strings.Length - 1];
-                        sensor_type = strings[strings.Length - 2];
-
-                        if (sensor_type != "TOUCHSENSE" && sensor_type != "ROTATESENSE")
-                        {
-                            arr[2] += 3;
-                            // no sensor type
-                            // this is a motor (output) neuron, so turn it into a perceptron
-                            neuron.type = Neuron.NeuronType.Perceptron;
-                            // connect to motor interface
-
-                            int tree_idx = -1;
-                            if (neuron_type == "LL")
-                            {
-                                tree_idx = 0;
-                            }
-                            else if (neuron_type == "LR")
-                            {
-                                tree_idx = 1;
-                            }
-                            else if (neuron_type == "R")
-                            {
-                                tree_idx = 2;
-                            }
-                            else
-                            {
-                                Debug.LogError("ERROR " + neuron_type);
-                            }
-                            neuron_indices[Brain.MOTOR_NEURON_KEY][cell.extradata[0..^neuron_type.Length] + tree_idx] = cell_idx_flat;
-                            neuron.neuron_class = Neuron.NeuronClass.Motor;
-                        }
-                        else
-                        {
-                            // this is a sensory (input) neuron, so turn it into a perceptron
-                            neuron.type = Neuron.NeuronType.Perceptron;
-
-                            // connect to sensory interface
-                            int tree_idx = -1;
-
-                            if (sensor_type == "TOUCHSENSE")
-                            {
-                                if (neuron_type == "LLL")
-                                {
-                                    tree_idx = 0; // TOP
-                                }
-                                else if (neuron_type == "LLR")
-                                {
-                                    tree_idx = 1; // BOT
-                                }
-                                else if (neuron_type == "LR")
-                                {
-                                    tree_idx = 2; // LEFT
-                                }
-                                else if (neuron_type == "RL")
-                                {
-                                    tree_idx = 3; // RIGHT
-                                }
-                                else if (neuron_type == "RRL")
-                                {
-                                    tree_idx = 4; // FRONT
-                                }
-                                else if (neuron_type == "RRR")
-                                {
-                                    tree_idx = 5; // BACK
-                                }
-                                else
-                                {
-                                    Debug.LogError("ERROR " + neuron_type);
-                                }
-                            }
-                            else if (sensor_type == "ROTATESENSE")
-                            {
-                                if (neuron_type == "LL")
-                                {
-                                    tree_idx = 6; // W
-                                }
-                                else if (neuron_type == "LR")
-                                {
-                                    tree_idx = 7; // X
-                                }
-                                else if (neuron_type == "RL")
-                                {
-                                    tree_idx = 8; // Y
-                                }
-                                else if (neuron_type == "RR")
-                                {
-                                    tree_idx = 9; // Z
-                                }
-                                else
-                                {
-                                    Debug.LogError("ERROR " + neuron_type);
-                                }
-                            }
-                            else if (sensor_type == "")
-                            {
-                                Debug.LogError("ERROR: No Sensor type");
-                            }
-                            else
-                            {
-                                Debug.LogError("ERROR " + neuron_type + " for sensor type " + sensor_type);
-                            }
-
-                            string key = "";
-                            for (int m = 0; m < strings.Length - 2; m++)
-                            {
-                                key += strings[m] + "_";
-                            }
-                            key += tree_idx;
-
-                            neuron_indices[Brain.SENSORY_NEURON_KEY][key] = cell_idx_flat;
-
-                            neuron.neuron_class = Neuron.NeuronClass.Sensor;
-                        }
-
-                    }
-
-                  // 
-
-                    if (GlobalConfig.brain_genome_development_processing_method == ProcessingMethod.CPU)
-                    {
-                        this.final_brain_neurons[cell_idx_flat] = neuron;
-                    }
-                    else if (GlobalConfig.brain_genome_development_processing_method == ProcessingMethod.GPU)
-                    {
-                        gpu_neuron_array[cell_idx_flat] = neuron;
-                    }
-                    else
-                    {
-                        Debug.LogError("error");
-                    }
-
-                }
-            }
-        }
-
-        if (GlobalConfig.brain_genome_development_processing_method == ProcessingMethod.GPU)
-        {
-            this.neurons_compute_buffer.SetData(gpu_neuron_array);
-        }
-    }
-
-
-    NativeArray<float> CPPN_nodes_outputs_native;
-    NativeArray<CPPNnodeParallel> CPPN_nodes_native;
-    NativeArray<CPPNconnectionParallel> CPPN_connections_native;
-    public override JobHandle ScheduleDevelopCPUJob()
-    {
-        this.final_brain_neurons = new(length: this.substrate_dimensions_size, Allocator.Persistent);
-        this.final_brain_synapses = new(length: this.substrate_dimensions_size * this.substrate_dimensions_size, Allocator.Persistent);
-
-        (CPPNnodeParallel[] CPPN_nodes, CPPNconnectionParallel[] CPPN_connections) = ConvertCPPNToParallel();
-
-        this.CPPN_nodes_outputs_native = new NativeArray<float>(CPPN_nodes.Length * this.final_brain_synapses.Length, allocator: Allocator.TempJob);
-        this.CPPN_nodes_native = new NativeArray<CPPNnodeParallel>(CPPN_nodes, allocator: Allocator.TempJob);
-        this.CPPN_connections_native = new NativeArray<CPPNconnectionParallel>(CPPN_connections, allocator: Allocator.TempJob);
-
-
-        ParallelHyperNEATCPU job = new()
-        {
-            SUBSTRATE_SIZE_X = this.substrate_dimensions.x,
-            SUBSTRATE_SIZE_Y = this.substrate_dimensions.y,
-            SUBSTRATE_SIZE_Z = this.substrate_dimensions.z,
-            NUM_OF_NODES = this.cppn_nodes.Count,
-            OUTPUT_NODES_START_IDX = sensorimotor_idxs.x,
-            OUTPUT_NODES_END_IDX = sensorimotor_idxs.y,
-
-            neurons = this.final_brain_neurons,
-            synapses = final_brain_synapses,
-
-            CPPN_nodes = this.CPPN_nodes_native,
-            CPPN_nodes_outputs = this.CPPN_nodes_outputs_native,
-            CPPN_connections = this.CPPN_connections_native
-        };
-        JobHandle develop_job_handle = job.Schedule(this.final_brain_synapses.Length, final_brain_synapses.Length);
-
-
-        return develop_job_handle;
-    }
-
-    public override (NativeArray<Brain.Neuron>, NativeArray<Brain.Synapse>) DevelopCPU(Dictionary<string, Dictionary<string, int>> neuron_indices)
-    {
-        this.CPPN_nodes_outputs_native.Dispose();
-        this.CPPN_nodes_native.Dispose();
-        this.CPPN_connections_native.Dispose();
 
 
 
-        LabelNeurons(neuron_indices);
-
-       // Debug.Log("brain has " + final_brain_synapses.Count + " synapse ");
-
-
-        return (this.final_brain_neurons, this.final_brain_synapses);
-
-    }
 
     public DevelopmentNeuron GetDefaultDevNeuron()
     {
         return new(threshold: 1, bias: 0, sign: true, adaptation_delta: 1, decay: 1, sigmoid_alpha: 1);
     }
 
-    public override BrainGenome LoadFromDisk()
-    {
-        throw new System.NotImplementedException();
-    }
 
     public override void Mutate()
     {
@@ -921,17 +558,38 @@ public class HyperNEATBrainGenome : BrainGenome
 
     public float GetRandomInitialCPPNWeight()
     {
-        return Range(-0.1f, 0.1f);
+        return Range(-0.5f, 0.5f);
     }
 
     public override (BrainGenome, BrainGenome) Reproduce(BrainGenome genome_parent2)
     {
-        HyperNEATBrainGenome parent1 = this;
-        HyperNEATBrainGenome parent2 = (HyperNEATBrainGenome)genome_parent2;
-        HyperNEATBrainGenome offspring1 = new();
-        HyperNEATBrainGenome offspring2 = new();
+        HyperNEATBrainGenome parent1;
+        HyperNEATBrainGenome parent2;
+        HyperNEATBrainGenome offspring1;
+        HyperNEATBrainGenome offspring2;
 
-        float[] update_period = new float[]{ parent1.brain_update_period, parent2.brain_update_period };
+        if (this is RegularHyperNEATBrainGenome)
+        {
+            parent1 = (RegularHyperNEATBrainGenome)this;
+            parent2 = (RegularHyperNEATBrainGenome)genome_parent2;
+            offspring1 = new RegularHyperNEATBrainGenome();
+            offspring2 = new RegularHyperNEATBrainGenome();
+        }
+        else if(this is ESHyperNEATBrainGenome)
+        {
+            parent1 = (ESHyperNEATBrainGenome)this;
+            parent2 = (ESHyperNEATBrainGenome)genome_parent2;
+            offspring1 = new ESHyperNEATBrainGenome();
+            offspring2 = new ESHyperNEATBrainGenome();
+        }
+        else
+        {
+            Debug.LogError("error");
+            return (null, null);
+        }
+
+
+        float[] update_period = new float[] { parent1.brain_update_period, parent2.brain_update_period };
         int rnd = Range(0, 2);
         offspring1.brain_update_period = update_period[rnd];
         offspring2.brain_update_period = update_period[1 - rnd];
@@ -956,7 +614,8 @@ public class HyperNEATBrainGenome : BrainGenome
                 if (neuron1.ID < neuron2.ID)
                 {
                     neuron2 = null;
-                } else if (neuron1.ID > neuron2.ID)
+                }
+                else if (neuron1.ID > neuron2.ID)
                 {
                     neuron1 = null;
                 }
@@ -967,7 +626,7 @@ public class HyperNEATBrainGenome : BrainGenome
                 rnd = Range(0, 2);
                 CPPNnode[] nodes = { neuron1, neuron2 };
                 offspring1.cppn_nodes.Add(nodes[rnd].Clone());
-                offspring2.cppn_nodes.Add(nodes[1-rnd].Clone());
+                offspring2.cppn_nodes.Add(nodes[1 - rnd].Clone());
                 i++;
                 j++;
             }
@@ -1023,7 +682,7 @@ public class HyperNEATBrainGenome : BrainGenome
                 rnd = Range(0, 2);
                 CPPNconnection[] connections = new CPPNconnection[] { connection1, connection2 };
                 offspring1.cppn_connections.Add(connections[rnd].Clone());
-                offspring2.cppn_connections.Add(connections[1-rnd].Clone());
+                offspring2.cppn_connections.Add(connections[1 - rnd].Clone());
                 i++;
                 j++;
             }
@@ -1055,9 +714,70 @@ public class HyperNEATBrainGenome : BrainGenome
         return (offspring1, offspring2);
     }
 
+
+
+    public const string save_file_extension = ".HyperNEATBrainGenome";
     public override void SaveToDisk()
     {
-        throw new System.NotImplementedException();
+        string[] existing_saves = Directory.GetFiles(path: GlobalConfig.save_file_path, searchPattern: GlobalConfig.save_file_base_name + "*" + save_file_extension);
+        int num_files = existing_saves.Length;
+        string full_path = GlobalConfig.save_file_path + GlobalConfig.save_file_base_name + num_files.ToString() + save_file_extension;
+        Debug.Log("Saving brain genome to disk: " + full_path);
+        StreamWriter data_file;
+        data_file = new(path: full_path, append: false);
+
+
+        BinaryFormatter formatter = new BinaryFormatter();
+        object[] objects_to_save = new object[] { CPPN_nodes, CPPN_connections };
+        formatter.Serialize(data_file.BaseStream, objects_to_save);
+        data_file.Close();
+    }
+
+    public static HyperNEATBrainGenome LoadFromDisk(string filename = "")
+    {
+
+        if (filename == "")
+        {
+            string[] existing_saves = Directory.GetFiles(path: GlobalConfig.save_file_path, searchPattern: GlobalConfig.save_file_base_name + "*" + save_file_extension);
+            int num_files = existing_saves.Length - 1;
+            filename = GlobalConfig.save_file_base_name + num_files.ToString();
+        }
+
+
+        CPPNnodeParallel[] CPPN_nodes = null;
+        CPPNconnectionParallel[] CPPN_connections = null;
+
+        BinaryFormatter formatter = new BinaryFormatter();
+        string full_path = GlobalConfig.save_file_path + filename + save_file_extension;
+        // loading
+        using (FileStream fs = File.Open(full_path, FileMode.Open))
+        {
+            object obj = formatter.Deserialize(fs);
+            // = new object[] { this.current_state_neurons.ToArray(), this.current_state_synapses.ToArray() };
+            var newlist = (object[])obj;
+            for (int i = 0; i < newlist.Length; i++)
+            {
+                if (i == 0)
+                {
+                    CPPN_nodes = (CPPNnodeParallel[])newlist[i];
+                }
+                else if (i == 1)
+                {
+                    CPPN_connections = (CPPNconnectionParallel[])newlist[i];
+                }
+                else
+                {
+                    Debug.LogWarning("ERROR LOADING BRAIN");
+                }
+
+            }
+        }
+
+        RegularHyperNEATBrainGenome genome = new();
+        JobHandle handle = genome.ScheduleDevelopCPUJob();
+        handle.Complete();
+
+        return genome;
     }
 
     // call this function when all CPPN nodes and connections are set
@@ -1193,22 +913,79 @@ public class HyperNEATBrainGenome : BrainGenome
             this.layers[n.layer].Add(n);
         }
 
+
+        // convert to GPU
+        (this.CPPN_nodes, this.CPPN_connections) = ConvertCPPNToParallel();
+
         //Debug.Log("CPPN Size " + this.cppn_nodes.Count + " with " + this.cppn_connections.Count + " connections");
     }
 
-
+    [Serializable]
     public struct CPPNconnectionParallel
     {
         public int from_idx;
         public float weight;
     }
 
+    [Serializable]
     public struct CPPNnodeParallel
     {
         public int function;
         public int number_of_input_connections;
         public int input_connection_start_idx;
     }
+
+
+    public struct CPPNOutputArray
+    {
+        public float initial_weight;
+        public float learning_rate;
+        public float4 hebb_ABCD_coefficients;
+        public float bias;
+        public int sign;
+        public float sigmoid_alpha;
+        public Neuron.NeuronActivationFunction activation_function;
+        public bool enabled;
+
+        public CPPNOutputArray(float initial_weight,
+            float learning_rate,
+            float4 hebb_ABCD_coefficients,
+            float bias,
+            int sign,
+            float sigmoid_alpha,
+            Neuron.NeuronActivationFunction activation_function,
+            bool enabled)
+        {
+            this.initial_weight = initial_weight;
+            this.learning_rate = learning_rate;
+            this.hebb_ABCD_coefficients = hebb_ABCD_coefficients;
+            this.bias = bias;
+            this.sign = sign;
+            this.sigmoid_alpha = sigmoid_alpha;
+            this.activation_function = activation_function;
+            this.enabled = enabled;
+    }
+
+        public static CPPNOutputArray GetNewDefault()
+        {
+            return new CPPNOutputArray(0, 0, new float4(0, 0, 0, 0), 0, 0, 0, Neuron.NeuronActivationFunction.Sigmoid, false);
+        }
+
+        public static float Distance(CPPNOutputArray a, CPPNOutputArray b)
+        {
+            float result = 0;
+            //result += math.pow(a.initial_weight - b.initial_weight, 2);
+            result += math.pow(a.learning_rate - b.learning_rate, 2);
+            for(int i = 0; i < 4; i++)
+            {
+                result += math.pow(a.hebb_ABCD_coefficients[i] - b.hebb_ABCD_coefficients[i], 2);
+            }
+            // result += math.pow(a.bias - b.bias, 2);
+            //result += math.pow(a.sign - b.sign, 2);
+            //result += math.pow(a.sigmoid_alpha - b.sigmoid_alpha, 2);
+            return result;
+        }
+    };
 
     public class CPPNnode
     {
@@ -1300,13 +1077,153 @@ public class HyperNEATBrainGenome : BrainGenome
                     break;
             }
 
-            if (float.IsNaN(activation)) return 0.0f;
+     
+            if (!float.IsFinite(activation)) return 0.0f;
             else return activation;
         }
 
     }
 
-  
+
+
+    float EvaluateCPPNNode(CPPNnodeParallel node, float[] CPPN_nodes_outputs)
+    {
+        float sum = 0;
+        for (int i = node.input_connection_start_idx; i < node.input_connection_start_idx + node.number_of_input_connections; i++)
+        {
+            CPPNconnectionParallel connection = CPPN_connections[i];
+            float input_value = CPPN_nodes_outputs[connection.from_idx];
+            sum += connection.weight * input_value;
+        }
+        return CPPNnode.EvaluateCPPNFunction((CPPNFunction)node.function, sum);
+    }
+
+    public CPPNOutputArray QueryCPPN(float x1, float y1, float z1, float x2, float y2, float z2)
+    {
+        int NUM_OF_CPPN_NODES = this.CPPN_nodes.Length;
+        CPPNOutputArray output_array = CPPNOutputArray.GetNewDefault();
+        float[] CPPN_nodes_outputs = new float[NUM_OF_CPPN_NODES];
+
+
+        int k;
+        float result;
+
+        // do inputs
+        for (k = 0; k < HyperNEATBrainGenome.sensorimotor_idxs.x; k++)
+        {
+
+            if (k == 0)
+            {
+                result = 1;
+            }
+            else if (k == 1)
+            {
+                result = x1;
+            }
+            else if (k == 2)
+            {
+                result = y1;
+            }
+            else if (k == 3)
+            {
+                result = z1;
+            }
+            else if (k == 4)
+            {
+                result = x2;
+            }
+            else if (k == 5)
+            {
+                result = y2;
+            }
+            else// if (k == 6)
+            {
+                result = z2;
+            }
+
+            CPPN_nodes_outputs[k] = result;
+        }
+
+
+        // do hidden nodes
+        for (k = HyperNEATBrainGenome.sensorimotor_idxs.y; k < NUM_OF_CPPN_NODES; k++)
+        {
+            CPPN_nodes_outputs[k] = EvaluateCPPNNode(CPPN_nodes[k], CPPN_nodes_outputs);
+        }
+
+        // do outputs
+        int m = 0;
+        for (k = HyperNEATBrainGenome.sensorimotor_idxs.x; k < HyperNEATBrainGenome.sensorimotor_idxs.y; k++)
+        {
+            result = EvaluateCPPNNode(CPPN_nodes[k], CPPN_nodes_outputs);
+
+            if (m == 0)
+            {
+                output_array.initial_weight = result;
+            }
+            else if (m == 1)
+            {
+                output_array.learning_rate = result;
+            }
+            else if (m == 2)
+            {
+                output_array.hebb_ABCD_coefficients[0] = ABCD_multiplier * result;
+            }
+            else if (m == 3)
+            {
+                output_array.hebb_ABCD_coefficients[1] = ABCD_multiplier * result;
+            }
+            else if (m == 4)
+            {
+                output_array.hebb_ABCD_coefficients[2] = ABCD_multiplier * result;
+            }
+            else if (m == 5)
+            {
+                output_array.hebb_ABCD_coefficients[3] = ABCD_multiplier * result;
+            }
+            else if (m == 6)
+            {
+                output_array.bias = result;
+            }
+            else if (m == 7)
+            {
+                output_array.sigmoid_alpha = multiplier * math.abs(result);
+            }
+            else if (m == 8)
+            {
+                if (result >= -1 && result <= -0.33)
+                {
+                    output_array.activation_function = Neuron.NeuronActivationFunction.Sigmoid;
+
+                }
+                else if (result >= -0.33 && result <= 0.33)
+                {
+                    output_array.activation_function = Neuron.NeuronActivationFunction.Tanh;
+                }
+                else //   result > 0.25
+                {
+                    output_array.activation_function = Neuron.NeuronActivationFunction.LeakyReLU;
+                }
+            }
+            else if (m == 9)
+            {
+                output_array.sign = result < 0 ? -1 : 1;
+            }
+            else if (m == 10)
+            {
+                output_array.enabled = result > 0 ? true : false;
+            }
+            else
+            {
+                Debug.LogError("Error");
+            }
+            m++;
+        }
+
+        return output_array;
+    }
+
+
 
     public class CPPNconnection
     {

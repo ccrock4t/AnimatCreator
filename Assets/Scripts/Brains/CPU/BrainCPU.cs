@@ -1,9 +1,14 @@
+using NUnit.Framework;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
+using static BrainGenomeTree;
 
 public class BrainCPU : Brain
 {
@@ -79,5 +84,80 @@ public class BrainCPU : Brain
     public override int GetNumberOfNeurons()
     {
         return this.current_state_neurons.Length;
+    }
+
+    public override void SaveToDisk()
+    {
+        this.update_job_handle.Complete();
+
+        string[] existing_saves = Directory.GetFiles(path: GlobalConfig.save_file_path, searchPattern: GlobalConfig.save_file_base_name + "*" + save_file_extension);
+        int num_files = existing_saves.Length;
+        string full_path = GlobalConfig.save_file_path + GlobalConfig.save_file_base_name + num_files.ToString() + save_file_extension;
+        Debug.Log("Saving brain to disk: " + full_path);
+        StreamWriter data_file;
+        data_file = new(path: full_path, append: false);
+
+
+        BinaryFormatter formatter = new BinaryFormatter();
+        object[] objects_to_save = new object[] { this.current_state_neurons.ToArray(), this.current_state_synapses.ToArray() };
+        formatter.Serialize(data_file.BaseStream, objects_to_save);
+        data_file.Close();
+    }
+
+    public static (NativeArray<Neuron>, NativeArray<Synapse>) LoadFromDisk(string filename="")
+    {
+     
+        if (filename == "")
+        {
+            string[] existing_saves = Directory.GetFiles(path: GlobalConfig.save_file_path, searchPattern: GlobalConfig.save_file_base_name + "*" + save_file_extension);
+            int num_files = existing_saves.Length-1;
+            filename = GlobalConfig.save_file_base_name + num_files.ToString();
+        }
+
+
+        Neuron[] neuron_array = null;
+        Synapse[] synapse_array = null;
+
+        BinaryFormatter formatter = new BinaryFormatter();
+        string full_path = GlobalConfig.save_file_path + filename + save_file_extension;
+        // loading
+        using (FileStream fs = File.Open(full_path, FileMode.Open))
+        {
+            object obj = formatter.Deserialize(fs);
+            // = new object[] { this.current_state_neurons.ToArray(), this.current_state_synapses.ToArray() };
+            var newlist = (object[])obj;
+            for(int i=0; i < newlist.Length; i++) 
+            {
+                if (i == 0)
+                {
+                    neuron_array = (Neuron[])newlist[i];
+                }
+                else if(i == 1)
+                {
+                    synapse_array = (Synapse[])newlist[i];
+                }
+                else
+                {
+                    Debug.LogWarning("ERROR LOADING BRAIN");
+                }
+                
+            }
+        }
+
+        NativeArray<Neuron> native_neuron_array = new(neuron_array.Length, Allocator.Persistent);
+        NativeArray<Synapse> native_synapse_array = new(synapse_array.Length, Allocator.Persistent);
+
+        for(int i = 0; i < neuron_array.Length; i++)
+        {
+            native_neuron_array[i] = neuron_array[i];
+        }
+
+        for (int i = 0; i < synapse_array.Length; i++)
+        {
+            native_synapse_array[i] = synapse_array[i];
+        }
+
+        return (native_neuron_array, native_synapse_array);
+
     }
 }

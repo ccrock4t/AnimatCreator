@@ -37,8 +37,8 @@ public struct ParallelNeuralUpdateCPU : IJobParallelFor
         neuron.DecayVoltage();
 
         // sum inputs in the current
-        int start_idx = neuron.synapse_start_idx;
-        int end_idx = neuron.synapse_start_idx + neuron.synapse_count;
+        int start_idx = (neuron.neuron_class == Neuron.NeuronClass.Sensor) ? 0 : neuron.synapse_start_idx;
+        int end_idx = (neuron.neuron_class == Neuron.NeuronClass.Sensor) ? 0 : (neuron.synapse_start_idx + neuron.synapse_count);
         float sum = 0.0f;
         sum += neuron.bias;
         for (int j = start_idx; j < end_idx; j++)
@@ -92,11 +92,15 @@ public struct ParallelNeuralUpdateCPU : IJobParallelFor
                 {
                     neuron.activation = neuron.LeakyReLUSum(sum);
                 }
+                else if (neuron.activation_function == Neuron.NeuronActivationFunction.ReLU)
+                {
+                    neuron.activation = neuron.ReLUSum(sum);
+                }
                 else
                 {
                     Debug.LogError("error");
                 }
-                if (float.IsNaN(neuron.activation))
+                if (!float.IsFinite(neuron.activation))
                 {
                     neuron.activation = 0;
                 }
@@ -139,8 +143,13 @@ public struct ParallelNeuralUpdateCPU : IJobParallelFor
                 connection.weight += delta_weight;
             }
 
+            if (!float.IsFinite(connection.weight))
+            {
+                connection.weight = 0;
+            }
+
             // constrain weight in [-1,1]
-/*            if(connection.weight > 1)
+   /*         if(connection.weight > 1)
             {
                 connection.weight = 1;
             }else if(connection.weight < -1)

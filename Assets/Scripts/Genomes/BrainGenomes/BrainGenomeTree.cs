@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
+using Unity.Mathematics;
 using UnityEngine;
 using static AxonalGrowthBrainGenome;
 using static Brain;
@@ -20,6 +21,8 @@ public abstract class BrainGenomeTree : BrainGenome
     public float TREE_DEPTH_MUTATION_RATE = 0.2f;
 
     public int MUTATION_TREE_DEPTH = 1;
+
+    public const string save_file_extension = ".TreeBrainGenome";
 
     // variables 
     public int size = 0;
@@ -75,7 +78,7 @@ public abstract class BrainGenomeTree : BrainGenome
         if(this is CellularEncodingBrainGenome)
         {
             cloned_genome = new CellularEncodingBrainGenome(cloned_trees);
-        }else if (this is CellularEncodingBrainGenome)
+        }else if (this is AxonalGrowthBrainGenome)
         {
             cloned_genome = new AxonalGrowthBrainGenome(cloned_trees);
         }
@@ -140,33 +143,7 @@ public abstract class BrainGenomeTree : BrainGenome
     }
 
     public abstract ProgramSymbolTree GenerateRandomMutation();
-    public abstract int[] ArgumentRange(object instruction);
 
-    public int[] GenerateRandomArguments(object instruction)
-    {
-        int[] arguments = new int[HowManyArguments(instruction)];
-        if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.AxonalGrowth)
-        {
-            int[] range;
-            int argument;
-
-            for (int j = 0; j < HowManyArguments(instruction); j++)
-            {
-                range = ArgumentRange(instruction);
-                if ((AxonalGrowthCellularInstruction)instruction == AxonalGrowthCellularInstruction.DIVISION && j == 3) range = ArgumentRange(AxonalGrowthCellularInstruction.JUMP);
-                argument = UnityEngine.Random.Range(range[0], range[1] + 1);
-                arguments[j] = argument;
-            }
-        }
-        else //if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.CellularEncoding)
-        {
-            Debug.LogWarning("Not generating any arguments.");
-            return new int[0];
-        }
-
-
-        return arguments;
-    }
 
 
     /// <summary>
@@ -199,7 +176,7 @@ public abstract class BrainGenomeTree : BrainGenome
             {
                 mutation_type = 2; // add a gene
             }
-        }else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.AxonalGrowth)
+        }else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.SGOCE)
         {
             if ((AxonalGrowthCellularInstruction)tree.instruction == AxonalGrowthCellularInstruction.END && (mutation_type == 2 || mutation_type == 3))
             {
@@ -324,12 +301,12 @@ public abstract class BrainGenomeTree : BrainGenome
     ///     Load genome from disk.
     /// </summary>
     /// <returns></returns>
-    public override BrainGenome LoadFromDisk()
+    public static BrainGenome LoadFromDisk()
     {
 
         Debug.LogError("TODO: SPECIFY WHAT KIND OF BRAIN GENOME IS BEING LOADED SO THE SAVE DATA CAN BE INTERPRETED CORRECTLY");
 
-        string full_path = BrainGenomeTree.save_file_path + save_file_base_name + save_file_extension;
+        string full_path = GlobalConfig.save_file_path + GlobalConfig.save_file_base_name + save_file_extension;
         Debug.Log("Loading brain genome from disk: " + full_path);
 
         StreamReader data_file;
@@ -358,11 +335,11 @@ public abstract class BrainGenomeTree : BrainGenome
     /// <param name="genome"></param>
     public override void SaveToDisk()
     {
-        string[] existing_saves = Directory.GetFiles(path: save_file_path, searchPattern: save_file_base_name + "*" + save_file_extension);
+        string[] existing_saves = Directory.GetFiles(path: GlobalConfig.save_file_path, searchPattern: GlobalConfig.save_file_base_name + "*" + save_file_extension);
 
         int num = existing_saves.Length;
 
-        string full_path = save_file_path + save_file_base_name + num.ToString() + save_file_extension;
+        string full_path = GlobalConfig.save_file_path + GlobalConfig.save_file_base_name + num.ToString() + save_file_extension;
         Debug.Log("Saving brain genome to disk: " + full_path);
         StreamWriter data_file;
         data_file = new(path: full_path, append: false);
@@ -386,7 +363,7 @@ public abstract class BrainGenomeTree : BrainGenome
     /// <param name="tree"></param>
     public static void WriteTree(StreamWriter data_file, ProgramSymbolTree tree)
     {
-        data_file.WriteLine(open_string);
+        data_file.WriteLine(GlobalConfig.open_string);
 
         int instruction = (int)tree.instruction;
         data_file.WriteLine(instruction);
@@ -404,7 +381,7 @@ public abstract class BrainGenomeTree : BrainGenome
             WriteTree(data_file, child);
         }
 
-        data_file.WriteLine(close_string);
+        data_file.WriteLine(GlobalConfig.close_string);
     }
 
     /// <summary>
@@ -431,13 +408,13 @@ public abstract class BrainGenomeTree : BrainGenome
         List<ProgramSymbolTree> children = new();
 
         string separator = data_file.ReadLine();
-        if (separator == close_string)
+        if (separator == GlobalConfig.close_string)
         {
             // no children
         }
-        else if (separator == open_string)
+        else if (separator == GlobalConfig.open_string)
         {
-            while (separator == open_string)
+            while (separator == GlobalConfig.open_string)
             {
                 // child
                 ProgramSymbolTree child = ReadTree(data_file);
@@ -802,7 +779,7 @@ public abstract class BrainGenomeTree : BrainGenome
             {
                 return 0;
             }
-            else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.AxonalGrowth)
+            else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.SGOCE)
             {
                 return AxonalGrowthBrainGenome.HowManyArguments(instruction);
             }
@@ -815,10 +792,7 @@ public abstract class BrainGenomeTree : BrainGenome
 
     }
 
-    public static ProgramSymbolTree GetJUMPPST()
-    {
-        return new ProgramSymbolTree(instruction: AxonalGrowthCellularInstruction.JUMP, children: new ProgramSymbolTree[] { GetENDPST() }, arguments: new int[] {1});
-    }
+
     public static ProgramSymbolTree GetENDPST()
     {
         return new ProgramSymbolTree(instruction: GetENDInstruction(), children: new ProgramSymbolTree[0]);
@@ -830,7 +804,7 @@ public abstract class BrainGenomeTree : BrainGenome
         {
             return CECellularInstruction.END;
         }
-        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.AxonalGrowth)
+        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.SGOCE)
         {
             return AxonalGrowthCellularInstruction.END;
         }
@@ -895,6 +869,7 @@ public abstract class BrainGenomeTree : BrainGenome
 
         public int recursive_limit; // how many function calls deep can this cell go
         public int link_register;
+        public float3 position;
 
         public TreeDevelopmentNeuron(ProgramSymbolTree instruction_pointer,
             List<TreeDevelopmentSynapse> inputs,
@@ -940,15 +915,15 @@ public abstract class BrainGenomeTree : BrainGenome
 
 
             TreeDevelopmentNeuron clone = new TreeDevelopmentNeuron(this.instruction_pointer,
-             cloned_inputs,
-             cloned_outputs,
-             link_register: this.link_register,
-             threshold: this.threshold,
-             bias: this.bias,
-             sign: this.sign,
-             adaptation: this.adaptation_delta,
-             decay: this.decay,
-             sigmoid_alpha: this.sigmoid_alpha);
+                 cloned_inputs,
+                 cloned_outputs,
+                 link_register: this.link_register,
+                 threshold: this.threshold,
+                 bias: this.bias,
+                 sign: this.sign,
+                 adaptation: this.adaptation_delta,
+                 decay: this.decay,
+                 sigmoid_alpha: this.sigmoid_alpha);
 
             clone.extradata = this.extradata;
 

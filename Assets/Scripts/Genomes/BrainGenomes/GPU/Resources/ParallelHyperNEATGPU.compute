@@ -227,7 +227,7 @@ CPPNOutputArray EvaluateCPPN(int i, int x1, int y1, int z1, int x2, int y2, int 
                 output_array.sigmoid_alpha = result;
             } else if (m == 8)
             {
-                output_array.sign = 1;
+                output_array.sign = result;
             }
             m++;
         }

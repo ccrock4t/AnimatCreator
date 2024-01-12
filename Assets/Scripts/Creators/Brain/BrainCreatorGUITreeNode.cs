@@ -82,7 +82,7 @@ public class BrainCreatorGUITreeNode : MonoBehaviour
             to_instruction = (CECellularInstruction)GlobalUtils.enumValueOf(instruction_short, typeof(CECellularInstruction));
             from_instruction = (CECellularInstruction)this.tree.instruction;
         }
-        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.AxonalGrowth)
+        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.SGOCE)
         {
             to_instruction = (AxonalGrowthCellularInstruction)GlobalUtils.enumValueOf(instruction_short, typeof(AxonalGrowthCellularInstruction));
             from_instruction = (AxonalGrowthCellularInstruction)this.tree.instruction;

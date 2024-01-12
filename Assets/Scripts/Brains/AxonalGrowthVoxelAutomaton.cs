@@ -91,8 +91,12 @@ public class AxonalGrowthVoxelAutomaton
             decay: 0.99f,
             sigmoid_alpha: 1);
 
-
         int3 ancestor_coords = new int3(24, 24, 24);
+
+        ancestor_neuron.position = new float3(1.0f*ancestor_coords.x / this.automaton_dimensions.x, 1.0f * ancestor_coords.y / this.automaton_dimensions.y, 1.0f * ancestor_coords.z / this.automaton_dimensions.z);
+
+
+
 
         NeuralVoxelCell ancestor_cell = new(neuron: ancestor_neuron, coords: new int3(24,24,24));
         NeuralVoxelCellInfo ancestor_cell_info = this.cell_array[ancestor_coords.x, ancestor_coords.y, ancestor_coords.z];
@@ -109,12 +113,12 @@ public class AxonalGrowthVoxelAutomaton
         int y = coords.y;
         int z = coords.z;
 
-        if (this.cell_array[x, y, z].current_state != null)
+     /*   if (this.cell_array[x, y, z].current_state != null)
         { 
             Debug.LogError("Cannot insert neuron; space is occupied");
             return;
         }
-
+*/
 
         TreeDevelopmentNeuron neuron = new(instruction_pointer: null,
             inputs: new List<TreeDevelopmentSynapse>(),
@@ -128,8 +132,7 @@ public class AxonalGrowthVoxelAutomaton
             sigmoid_alpha: 1);
 
         neuron.extradata = extradata;
-
-
+        neuron.position = new(1.0f * coords.x/ this.automaton_dimensions.x, 1.0f * coords.y/ this.automaton_dimensions.y, 1.0f * coords.z/ this.automaton_dimensions.z);
         NeuralVoxelCell neuron_cell = new(neuron: neuron, coords: coords);
         NeuralVoxelCellInfo cell_info = this.cell_array[x, y, z];
         cell_info.current_state = neuron_cell;
@@ -208,6 +211,10 @@ public class AxonalGrowthVoxelAutomaton
                         {
                             // cell is empty, so we can divide into it
                             target_voxel_cell = neural_voxel_cell.Clone(new_coords: new int3(targetX, targetY, targetZ));
+
+                            target_voxel_cell.neuron.position = new(1.0f* targetX / this.automaton_dimensions.x,
+                                                                   1.0f * targetY / this.automaton_dimensions.y,
+                                                                    1.0f * targetZ / this.automaton_dimensions.z);
                             if (instruction == AxonalGrowthCellularInstruction.CLONE)
                             {
                                 target_voxel_cell.neuron.MoveToChildA();
@@ -484,6 +491,7 @@ public class AxonalGrowthVoxelAutomaton
                     else
                     {*/
                     // program is complete, finalize the neuron
+
                     this.developed_brain.Add(cell);
                     this.developing_brain.RemoveAt(i);
                     i--;

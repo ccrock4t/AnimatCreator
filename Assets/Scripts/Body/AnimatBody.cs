@@ -21,7 +21,7 @@ public class AnimatBody : MonoBehaviour
     public static Material green;
 
     public const float FORCE_MODE_TORQUE_SCALE = 1f;
-    public const float TARGET_MODE_MAX_DEGREES_MOVED_PER_SECOND = 8;
+    public const float TARGET_MODE_MAX_DEGREES_MOVED_PER_SECOND = 4;
 
     public const float DRIVE_LIMITS = 45; // angle
     public const float STIFFNESS = 500f;

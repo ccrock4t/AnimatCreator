@@ -1,3 +1,4 @@
+using Mono.Cecil.Cil;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,12 +8,14 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using static Brain;
+using static GlobalConfig;
+using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 
 public class AxonalGrowthBrainGenome : BrainGenomeTree
 {
 
     const int AXONAL_GROWTH_LOCAL_RANGE = 5;
-
+    int num_of_joints;
 
     public AxonalGrowthBrainGenome() : base() {
         ProgramSymbolTree root = new(AxonalGrowthCellularInstruction.END);
@@ -20,14 +23,15 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
         this.size = root.size;
     }
 
-    public AxonalGrowthBrainGenome(ProgramSymbolTree root) : base(root) { }
+    public AxonalGrowthBrainGenome(ProgramSymbolTree root) : base(root) { 
+    }
 
     public AxonalGrowthBrainGenome(List<ProgramSymbolTree> trees) : base(trees) { }
 
     public static AxonalGrowthBrainGenome CreateTestGenome()
     {
         List<ProgramSymbolTree> forest = new();
-
+       
 
         ProgramSymbolTree A, B, C, D, A0, B0, C0, D0, root;
 
@@ -41,9 +45,11 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
         forest.Add(GetDIVPST());
         forest.Add(GetDIVPST());
 
-        return new AxonalGrowthBrainGenome(forest);
+        AxonalGrowthBrainGenome genome = new(forest);
+        genome.num_of_joints = GlobalConfig.creature_to_use == Creature.Hexapod ? 21 : 14; // hexapod or quadruped
+        return genome;
     }
-
+ 
     public static ProgramSymbolTree GetDIVPST()
     {
         ProgramSymbolTree A, B, C, D, A0, B0, C0, D0, root;
@@ -51,33 +57,21 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
 
         
 
-        A0 = GetJUMPPST();
+        A0 = new ProgramSymbolTree(instruction: AxonalGrowthCellularInstruction.GROW, children: new ProgramSymbolTree[] { GetENDPST() }, arguments: GenerateRandomArguments(AxonalGrowthCellularInstruction.GROW));
         B0 = GetENDPST();
        
 
         C0 = GetENDPST();
         D0 = GetENDPST();
 
-        rand_args = new int[] {
-            UnityEngine.Random.Range(-AXONAL_GROWTH_LOCAL_RANGE, AXONAL_GROWTH_LOCAL_RANGE),
-            UnityEngine.Random.Range(-AXONAL_GROWTH_LOCAL_RANGE, AXONAL_GROWTH_LOCAL_RANGE),
-            UnityEngine.Random.Range(-AXONAL_GROWTH_LOCAL_RANGE, AXONAL_GROWTH_LOCAL_RANGE)
-        };
-        B = new(AxonalGrowthCellularInstruction.DIVISION, children: new ProgramSymbolTree[] { A0, B0 }, arguments: rand_args);
 
-        rand_args = new int[] {
-            UnityEngine.Random.Range(-AXONAL_GROWTH_LOCAL_RANGE, AXONAL_GROWTH_LOCAL_RANGE),
-            UnityEngine.Random.Range(-AXONAL_GROWTH_LOCAL_RANGE, AXONAL_GROWTH_LOCAL_RANGE),
-            UnityEngine.Random.Range(-AXONAL_GROWTH_LOCAL_RANGE, AXONAL_GROWTH_LOCAL_RANGE)
-        };
-        C = new(AxonalGrowthCellularInstruction.DIVISION, children: new ProgramSymbolTree[] { C0, D0 }, arguments: rand_args);
+        B = new(AxonalGrowthCellularInstruction.DIVISION, children: new ProgramSymbolTree[] { A0, B0 }, arguments: GenerateRandomArguments(AxonalGrowthCellularInstruction.DIVISION));
 
-        rand_args = new int[] {
-            UnityEngine.Random.Range(-AXONAL_GROWTH_LOCAL_RANGE, AXONAL_GROWTH_LOCAL_RANGE),
-            UnityEngine.Random.Range(-AXONAL_GROWTH_LOCAL_RANGE, AXONAL_GROWTH_LOCAL_RANGE),
-            UnityEngine.Random.Range(-AXONAL_GROWTH_LOCAL_RANGE, AXONAL_GROWTH_LOCAL_RANGE),
-        };
-        root = new(AxonalGrowthCellularInstruction.DIVISION, children: new ProgramSymbolTree[] { B, C }, arguments: rand_args);
+
+        C = new(AxonalGrowthCellularInstruction.DIVISION, children: new ProgramSymbolTree[] { C0, D0 }, arguments: GenerateRandomArguments(AxonalGrowthCellularInstruction.DIVISION));
+
+
+        root = new(AxonalGrowthCellularInstruction.DIVISION, children: new ProgramSymbolTree[] { B, C }, arguments: GenerateRandomArguments(AxonalGrowthCellularInstruction.DIVISION));
 
         return root;
     }
@@ -88,40 +82,41 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
     {
         // insert sensory neurons
         int3 sensor_coords = new int3(10, 5, 20);
-        int3 motor_coords = new int3(20, 5, axonalGrowthVoxelAutomaton.automaton_dimensions.z - 20);
-        for (int i = 0; i <= 20; i++) // 20 joints in hexapod
+        int3 motor_coords = new int3(10, 5, axonalGrowthVoxelAutomaton.automaton_dimensions.z - 20);
+        for (int i = 0; i < this.num_of_joints; i++) 
         {
             string joint_key = Animat.GetSensorimotorJointKey(i);
-            // 3 for the motor
-            axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: motor_coords, extradata: "MOTORLAYER_" + joint_key + "_LL");
-            motor_coords += new int3(5, 0, 0);
-            axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: motor_coords, extradata: "MOTORLAYER_" + joint_key + "_LR");
-            motor_coords += new int3(5, 0, 0);
-            axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: motor_coords, extradata: "MOTORLAYER_" + joint_key + "_R");
-            motor_coords += new int3(-10, 2, 0);
 
             // 10 for the sensor
             axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: sensor_coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_LLL");
-            sensor_coords += new int3(3, 0, 0);
+            sensor_coords += new int3(0, 3, 0);
             axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: sensor_coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_LLR");
-            sensor_coords += new int3(3, 0, 0);
+            sensor_coords += new int3(0, 3, 0);
             axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: sensor_coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_LR");
-            sensor_coords += new int3(3, 0, 0);
+            sensor_coords += new int3(0, 3, 0);
             axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: sensor_coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_RL");
-            sensor_coords += new int3(3, 0, 0);
+            sensor_coords += new int3(0, 3, 0);
             axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: sensor_coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_RRL");
-            sensor_coords += new int3(3, 0, 0);
+            sensor_coords += new int3(0, 3, 0);
             axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: sensor_coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_RRR");
-            sensor_coords += new int3(3, 0, 0);
+            sensor_coords += new int3(0, 3, 0);
             axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: sensor_coords, extradata: "SENSORLAYER_" + joint_key + "_ROTATESENSE" + "_LL");
-            sensor_coords += new int3(3, 0, 0);
+            sensor_coords += new int3(0, 3, 0);
             axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: sensor_coords, extradata: "SENSORLAYER_" + joint_key + "_ROTATESENSE" + "_LR");
-            sensor_coords += new int3(3, 0, 0);
+            sensor_coords += new int3(0, 3, 0);
             axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: sensor_coords, extradata: "SENSORLAYER_" + joint_key + "_ROTATESENSE" + "_RL");
-            sensor_coords += new int3(3, 0, 0);
+            sensor_coords += new int3(0, 3, 0);
             axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: sensor_coords, extradata: "SENSORLAYER_" + joint_key + "_ROTATESENSE" + "_RR");
-            sensor_coords += new int3(3, 0, 0);
-            sensor_coords += new int3(-30, 2, 0);
+            sensor_coords += new int3(0, 3, 0);
+            sensor_coords += new int3(2, -30, 0);
+
+            // 3 for the motor
+            axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: motor_coords, extradata: "MOTORLAYER_" + joint_key + "_LL");
+            motor_coords += new int3(0, 10, 0);
+            axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: motor_coords, extradata: "MOTORLAYER_" + joint_key + "_LR");
+            motor_coords += new int3(0, 10, 0);
+            axonalGrowthVoxelAutomaton.InsertSensorimotorNeuron(coords: motor_coords, extradata: "MOTORLAYER_" + joint_key + "_R");
+            motor_coords += new int3(2, -20, 0);
 
         }
     }
@@ -159,7 +154,7 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
                 sign: cell.sign,
                 sigmoid_alpha: cell.sigmoid_alpha);
 
-     
+            neuron.position = cell.position;
 
             if (cell.extradata != "")
             {
@@ -415,7 +410,6 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
         switch ((AxonalGrowthCellularInstruction)instruction)
         {
             case AxonalGrowthCellularInstruction.DIVISION:
-                return 3;
             case AxonalGrowthCellularInstruction.CLONE:
             case AxonalGrowthCellularInstruction.GROW:
             case AxonalGrowthCellularInstruction.DRAW:
@@ -442,7 +436,7 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
         }
     }
 
-    public override int[] ArgumentRange(object instruction)
+    public static int[] ArgumentRange(object instruction)
     {
         switch ((AxonalGrowthCellularInstruction)instruction)
         {
@@ -452,7 +446,7 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
             case AxonalGrowthCellularInstruction.DRAW:
                 return new int[] { -AXONAL_GROWTH_LOCAL_RANGE, AXONAL_GROWTH_LOCAL_RANGE };
             case AxonalGrowthCellularInstruction.JUMP:
-                return new int[] { -this.forest.Count, this.forest.Count };
+                return new int[] { 0, 0 };
             default:
                 return new int[0];
         }
@@ -465,10 +459,32 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
 
     public override JobHandle ScheduleDevelopCPUJob()
     {
-        throw new NotImplementedException();
+        return new JobHandle();
     }
 
     public override void ScheduleDevelopGPUJob()
+    {
+        throw new NotImplementedException();
+    }
+
+    public static int[] GenerateRandomArguments(object instruction)
+    {
+        int[] arguments = new int[HowManyArguments(instruction)];
+        int[] range;
+        int argument;
+
+        for (int j = 0; j < HowManyArguments(instruction); j++)
+        {
+            range = ArgumentRange(instruction);
+            argument = UnityEngine.Random.Range(range[0], range[1] + 1);
+            arguments[j] = argument;
+        }
+        return arguments;
+    }
+
+ 
+
+    public override void SaveToDisk()
     {
         throw new NotImplementedException();
     }

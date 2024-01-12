@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Entities.UniversalDelegates;
 using UnityEditor;
 using UnityEngine;
 using static Brain;
@@ -19,7 +20,8 @@ public class Animat : MonoBehaviour
 
     public Transform animat_creator_food_block;
 
-    public ArticulationBody[] body_segments;
+    public ArticulationBody[] body_segments_abs;
+    public List<BodySegment> body_segments;
     public bool initialized = false;
     public bool developed = false;
 
@@ -59,48 +61,26 @@ public class Animat : MonoBehaviour
         this.physical_bodyGO = this.body.root_gameobject;
 
         // store body segments
-        this.listab = new(this.physical_body.GetComponentsInChildren<ArticulationBody>());
-        this.body_segments = listab.ToArray();
 
-        foreach(ArticulationBody segment1 in listab)
+        this.body_segments_abs = this.physical_body.GetComponentsInChildren<ArticulationBody>();
+        this.body_segments = new();
+
+        foreach (ArticulationBody segment1 in body_segments_abs)
         {
-            foreach (ArticulationBody segment2 in listab)
+            foreach (ArticulationBody segment2 in body_segments_abs)
             {
                 // make the colliders ignore each other
                 Physics.IgnoreCollision(segment1.GetComponent<BoxCollider>(), segment2.GetComponent<BoxCollider>());
             }
+
+            this.body_segments.Add(segment1.gameObject.GetComponent<BodySegment>());
         }
 
 
         // === create brain
         if (brain_genome == null)
         {
-            if(GlobalConfig.brain_genome_method == BrainGenomeMethod.CellularEncoding)
-            {
-                this.brain_genome = new CellularEncodingBrainGenome();
-            }
-            else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.AxonalGrowth)
-            {
-                this.brain_genome = new AxonalGrowthBrainGenome();
-            }
-            else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.NEAT)
-            {
-                this.brain_genome = new NEATBrainGenome();
-            }
-            else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.HyperNEAT)
-            {
-                this.brain_genome = new HyperNEATBrainGenome();
-            }
-            else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.ESHyperNEAT)
-            {
-                GlobalUtils.LogErrorFeatureNotImplemented("ESHyperNEAT");
-                return;
-            }
-            else
-            {
-                GlobalUtils.LogErrorEnumNotRecognized("NOT SUPPORTED");
-            }
-            
+            this.brain_genome = CreateTestBrainGenome();
         }
         else
         {
@@ -126,7 +106,35 @@ public class Animat : MonoBehaviour
 
     }
 
-  
+    public static BrainGenome CreateTestBrainGenome()
+    {
+        if (GlobalConfig.brain_genome_method == BrainGenomeMethod.CellularEncoding)
+        {
+            return CellularEncodingBrainGenome.CreateBrainGenomeWithHexapodConstraints();
+        }
+        else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.SGOCE)
+        {
+            return AxonalGrowthBrainGenome.CreateTestGenome();
+        }
+        else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.NEAT)
+        {
+            return NEATBrainGenome.CreateTestGenome();
+        }
+        else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.HyperNEAT)
+        {
+            return RegularHyperNEATBrainGenome.CreateTestGenome();
+        }
+        else if (GlobalConfig.brain_genome_method == BrainGenomeMethod.ESHyperNEAT)
+        {
+            return ESHyperNEATBrainGenome.CreateTestGenome();
+        }
+        else
+        {
+            GlobalUtils.LogErrorEnumNotRecognized("NOT SUPPORTED");
+            return null;
+        }
+    }
+
     void OnApplicationQuit()
     {
         // manually dispose of all unmanaged memory
@@ -138,13 +146,13 @@ public class Animat : MonoBehaviour
 
     public void DiposeOfBrainMemory()
     {
-         if(this.brain != null) this.brain.DisposeOfNativeCollections();
-         if(this.brain_genome is HyperNEATBrainGenome && GlobalConfig.brain_genome_development_processing_method == ProcessingMethod.GPU)
+        if (this.brain != null) this.brain.DisposeOfNativeCollections();
+        if (this.brain_genome is HyperNEATBrainGenome && GlobalConfig.brain_genome_development_processing_method == ProcessingMethod.GPU)
         {
-            ((HyperNEATBrainGenome)this.brain_genome).neurons_compute_buffer.Release();
-            ((HyperNEATBrainGenome)this.brain_genome).synapses_compute_buffer.Release();
-            ((HyperNEATBrainGenome)this.brain_genome).CPPN_node_compute_buffer.Release();
-            ((HyperNEATBrainGenome)this.brain_genome).CPPN_connection_compute_buffer.Release();
+            ((RegularHyperNEATBrainGenome)this.brain_genome).neurons_compute_buffer.Release();
+            ((RegularHyperNEATBrainGenome)this.brain_genome).synapses_compute_buffer.Release();
+            ((RegularHyperNEATBrainGenome)this.brain_genome).CPPN_node_compute_buffer.Release();
+            ((RegularHyperNEATBrainGenome)this.brain_genome).CPPN_connection_compute_buffer.Release();
         }
     }
 
@@ -162,18 +170,10 @@ public class Animat : MonoBehaviour
     // Update is called once per frame
     public void Update()
     {
-        if (!initialized) {
+        if (!initialized)
+        {
             Debug.Log("agent is not initialized");
             return;
-        }
-
-
-
-        if (this.GetFrontSegment().position.y < -5 || this.GetFrontSegment().position.y > 5)
-        {
-            animat_creator.current_generation.Remove(this);
-            this.DiposeOfBrainMemory();
-            Destroy(this.gameObject);
         }
     }
 
@@ -325,9 +325,10 @@ public class Animat : MonoBehaviour
         Dictionary<string, int> motor_indices = this.brain.neuron_indices[Brain.MOTOR_NEURON_KEY];
 
         // detect environment with sensory neurons
-        for (int j = 0; j < this.body_segments.Length; j++)
+        for (int j = 0; j < this.body_segments_abs.Length; j++)
         {
-            ArticulationBody segment = this.body_segments[j];
+            ArticulationBody body_segment_ab = this.body_segments_abs[j];
+            BodySegment body_segment = this.body_segments[j];
 
             string key = "SENSORLAYER_" + GetSensorimotorJointKey(j) + "_";
 
@@ -349,23 +350,23 @@ public class Animat : MonoBehaviour
                 //quaternion
                 if (i <= 5)
                 {
-                    sensory_neuron.activation = segment.gameObject.GetComponent<BodySegment>().touch_sensors[i].touching_terrain ? 1.0f : 0f;
+                    sensory_neuron.activation = body_segment.touch_sensors[i].touching_terrain ? 1.0f : 0f;
                 }
                 else if (i == 6)
                 {
-                    sensory_neuron.activation = segment.transform.rotation.x;
+                    sensory_neuron.activation = body_segment_ab.transform.rotation.x;
                 }
                 else if (i == 7)
                 {
-                    sensory_neuron.activation = segment.transform.rotation.y;
+                    sensory_neuron.activation = body_segment_ab.transform.rotation.y;
                 }
                 else if (i == 8)
                 {
-                    sensory_neuron.activation = segment.transform.rotation.z;
+                    sensory_neuron.activation = body_segment_ab.transform.rotation.z;
                 }
                 else if (i == 9)
                 {
-                    sensory_neuron.activation = segment.transform.rotation.w;
+                    sensory_neuron.activation = body_segment_ab.transform.rotation.w;
 
                 }
 
@@ -388,9 +389,9 @@ public class Animat : MonoBehaviour
 
         // effect environment with motor neurons
 
-        for (int j = 0; j < this.body_segments.Length; j++)
+        for (int j = 0; j < this.body_segments_abs.Length; j++)
         {
-            ArticulationBody segment = this.body_segments[j];
+            ArticulationBody segment = this.body_segments_abs[j];
 
             string key = "MOTORLAYER_" + GetSensorimotorJointKey(j) + "_";
             /*            if (key.Contains("BODYSEG"))
@@ -400,11 +401,6 @@ public class Animat : MonoBehaviour
             Vector3 torque = new Vector3(0, 0, 0);
             for (int i = 0; i < 3; i++)
             {
-                if (!motor_indices.ContainsKey(key + i))
-                {
-                    Debug.LogWarning("NO KEY");
-                    continue;
-                }
                 int brain_idx = motor_indices[key + i];
 
                 Neuron motor_neuron;
@@ -448,10 +444,11 @@ public class Animat : MonoBehaviour
                                     return;
                                 }*/
 
-                activation *= motor_neuron.sign;
+                activation = motor_neuron.activation;
 
                 if (activation > 1) activation = 1;
                 if (activation < -1) activation = -1;
+                if (energy_remaining <= 0) activation = 0;
 
                 motor_idx_to_activation[brain_idx] = activation;
             }
@@ -462,9 +459,9 @@ public class Animat : MonoBehaviour
     public void MotorEffect()
     {
         Dictionary<string, int> motor_indices = this.brain.neuron_indices[Brain.MOTOR_NEURON_KEY];
-        for (int j = 0; j < this.body_segments.Length; j++)
+        for (int j = 0; j < this.body_segments_abs.Length; j++)
         {
-            ArticulationBody segment = this.body_segments[j];
+            ArticulationBody segment = this.body_segments_abs[j];
 
             string key = "MOTORLAYER_" + GetSensorimotorJointKey(j) + "_";
             /*            if (key.Contains("BODYSEG"))
@@ -502,8 +499,9 @@ public class Animat : MonoBehaviour
                     continue;
                 }
 
-
-               
+                float energy_used = 0;
+                float difference = 0;
+                float new_activation = 0;
 
                 float GetLerpedActivation(float activation, ArticulationDrive drive)
                 {
@@ -516,11 +514,11 @@ public class Animat : MonoBehaviour
                     return new_activation;
                 }
 
-                float new_activation = 0;
 
                 if (i == 0)
                 {
                     new_activation = GetLerpedActivation(activation, segment.xDrive);
+                    energy_used = Mathf.Abs(new_activation - (segment.xDrive.target / AnimatBody.DRIVE_LIMITS));
                     if (GlobalConfig.USE_FORCE_MODE) new_activation = activation;
                     //if (!GlobalConfig.USE_FORCE_MODE) new_activation = activation;
                     body.SetXDrive(segment, new_activation);
@@ -528,6 +526,7 @@ public class Animat : MonoBehaviour
                 else if (i == 1)
                 {
                     new_activation = GetLerpedActivation(activation, segment.yDrive);
+                    energy_used = Mathf.Abs(new_activation - (segment.yDrive.target / AnimatBody.DRIVE_LIMITS));
                     if (GlobalConfig.USE_FORCE_MODE) new_activation = activation;
                     // if (!GlobalConfig.USE_FORCE_MODE) new_activation = activation;
                     body.SetYDrive(segment, new_activation);
@@ -535,16 +534,18 @@ public class Animat : MonoBehaviour
                 else if (i == 2)
                 {
                     new_activation = GetLerpedActivation(activation, segment.zDrive);
+                    energy_used = Mathf.Abs(new_activation - (segment.zDrive.target / AnimatBody.DRIVE_LIMITS));
                     if (GlobalConfig.USE_FORCE_MODE) new_activation = activation;
                     //if (!GlobalConfig.USE_FORCE_MODE) new_activation = activation;
                     body.SetZDrive(segment, new_activation);
                 }
 
 
+                //energy_remaining -= Mathf.Abs(energy_used);
+
             }
             if (GlobalConfig.USE_FORCE_MODE)
             {
-                // energy_remaining -= Mathf.Abs(torque.magnitude);
                 segment.AddTorque(torque * AnimatBody.FORCE_MODE_TORQUE_SCALE, ForceMode.Force);
             }
         }

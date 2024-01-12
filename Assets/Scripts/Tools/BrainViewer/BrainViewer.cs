@@ -25,13 +25,15 @@ public class BrainViewer : MonoBehaviour
 
     float timer = 0f;
 
-  
+
     public bool initialize_on_start = true;
 
     // Start is called before the first frame update
     void Start()
     {
-        this.spacing = new Vector3(10f, 10f, 25f);
+
+
+
     }
 
     public void ClearScene()
@@ -43,7 +45,7 @@ public class BrainViewer : MonoBehaviour
         }
         foreach (BrainViewerSynapse synapse in this.synapses)
         {
-             Destroy(synapse.gameObject);     
+            Destroy(synapse.gameObject);
         }
 
         this.neurons.Clear();
@@ -103,11 +105,20 @@ public class BrainViewer : MonoBehaviour
 
         if (this.brain is BrainGPU)
         {
-           ((BrainGPU)this.brain).TransferFromGPUToCPU();
+            ((BrainGPU)this.brain).TransferFromGPUToCPU();
+        }
+
+        if (this.genome is HyperNEATBrainGenome || this.genome is NEATBrainGenome || this.genome is CellularEncodingBrainGenome || this.genome is ESHyperNEATBrainGenome)
+        {
+            this.spacing = new Vector3(10f, 10f, 25f);
+        }
+        else if (this.genome is AxonalGrowthBrainGenome)
+        {
+            this.spacing = new Vector3(10f, 10f, 25f) * 10f;
         }
 
         this.SpawnNeurons();
-        if(SHOW_SYNAPSES) this.SpawnSynapses();
+        if (SHOW_SYNAPSES) this.SpawnSynapses();
         if (!is_alive)
         {
             Debug.Log("Viewing genome topology only, so disposing of memory allocated for parallel access of regular neurons.");
@@ -128,12 +139,12 @@ public class BrainViewer : MonoBehaviour
     {
         Vector3 position;
         Vector3 default_location = Vector3.zero; //x=sensor, y=hidden, z=motor
-        for (int i=0; i< this.brain.GetNumberOfNeurons();i++)
+        for (int i = 0; i < this.brain.GetNumberOfNeurons(); i++)
         {
             GameObject neuronGO = Instantiate(neuron_prefab, this.transform);
             neuronGO.transform.localScale *= 3;
             Neuron neuron = this.GetCurrentNeuron(i);
-            if(neuron.position.x == -1 && neuron.position.y == -1 && neuron.position.z == -1)
+            if (neuron.position.x == -1 && neuron.position.y == -1 && neuron.position.z == -1)
             {
                 // default placements
                 if (neuron.neuron_class == Neuron.NeuronClass.Motor)
@@ -155,7 +166,7 @@ public class BrainViewer : MonoBehaviour
             }
             else
             {
-                position = new Vector3(neuron.position.x, neuron.position.y, neuron.position.z);  
+                position = new Vector3(neuron.position.x, neuron.position.y, neuron.position.z);
             }
             neuronGO.transform.localPosition = Vector3.Scale(position, spacing);
             this.neurons.Add(neuronGO.GetComponent<BrainViewerNeuron>());
@@ -165,8 +176,8 @@ public class BrainViewer : MonoBehaviour
 
     public void SpawnSynapses()
     {
-      
-     
+
+
         for (int i = 0; i < this.brain.GetNumberOfNeurons(); i++)
         {
             GameObject to_neuron_GO = this.neurons[i].gameObject;
@@ -179,7 +190,7 @@ public class BrainViewer : MonoBehaviour
 
                 GameObject synapseGO = Instantiate(synapse_prefab, this.transform);
                 BrainViewerSynapse brain_viewer_synapse = synapseGO.GetComponent<BrainViewerSynapse>();
-   
+                brain_viewer_synapse.synapse = synapse;
                 brain_viewer_synapse.gameObjectA = to_neuron_GO;
                 brain_viewer_synapse.gameObjectB = from_neuron_GO;
                 this.synapses.Add(brain_viewer_synapse);
@@ -187,9 +198,9 @@ public class BrainViewer : MonoBehaviour
 
             }
         }
-  
+
     }
-    
+
 
 
     void Update()
@@ -198,7 +209,7 @@ public class BrainViewer : MonoBehaviour
         timer -= Time.deltaTime;
         if (timer > 0) return;
 
-        if(this.brain is BrainCPU)
+        if (this.brain is BrainCPU)
         {
             if (!((BrainCPU)this.brain).current_state_neurons.IsCreated) return;
         }
@@ -220,15 +231,15 @@ public class BrainViewer : MonoBehaviour
         }
 
         // update visual of synapses
-  /*      for (int i = 0; i < this.brain.GetNumberOfSynapses(); i++)
-        {
-            Synapse synapse = GetCurrentSynapse(i);
-            GameObject synapseGO = this.synapses[i].gameObject;
+        /*      for (int i = 0; i < this.brain.GetNumberOfSynapses(); i++)
+              {
+                  Synapse synapse = GetCurrentSynapse(i);
+                  GameObject synapseGO = this.synapses[i].gameObject;
 
 
-            this.neurons[i].UpdateColor(neuron.sign == 1, neuron.activation);
-            neuronGO.GetComponent<BrainViewerNeuron>().neuron = neuron;
-        }*/
+                  this.neurons[i].UpdateColor(neuron.sign == 1, neuron.activation);
+                  neuronGO.GetComponent<BrainViewerNeuron>().neuron = neuron;
+              }*/
 
         timer = GlobalConfig.BRAIN_VIEWER_UPDATE_PERIOD;
     }
@@ -238,13 +249,13 @@ public class BrainViewer : MonoBehaviour
         Neuron neuron;
         if (this.brain is BrainCPU)
         {
-            if(((BrainCPU)this.brain).update_job_handle != null) ((BrainCPU)this.brain).update_job_handle.Complete();
+            ((BrainCPU)this.brain).update_job_handle.Complete();
             //((BrainCPU)this.brain).update_job2_handle.Complete();
             neuron = ((BrainCPU)this.brain).current_state_neurons[i];
         }
         else //if (this.brain is BrainGPU)
         {
-  
+
             neuron = ((BrainGPU)this.brain).GetCurrentNeuron(i);
         }
         return neuron;
@@ -255,7 +266,7 @@ public class BrainViewer : MonoBehaviour
         Synapse synapse;
         if (this.brain is BrainCPU)
         {
-            if (((BrainCPU)this.brain).current_state_synapses.Length > 0 && ((BrainCPU)this.brain).current_state_neurons.Length > 0 && ((BrainCPU)this.brain).update_job_handle != null) ((BrainCPU)this.brain).update_job_handle.Complete();
+            ((BrainCPU)this.brain).update_job_handle.Complete();
             //if (((BrainCPU)this.brain).current_state_synapses.Length > 0 && ((BrainCPU)this.brain).current_state_neurons.Length > 0) ((BrainCPU)this.brain).update_job2_handle.Complete();
             synapse = ((BrainCPU)this.brain).current_state_synapses[i];
         }

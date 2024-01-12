@@ -154,7 +154,7 @@ MonoBehaviour:
   neurons: []
   synapses: []
   SHOW_SYNAPSES: 0
-  initialize_on_start: 1
+  initialize_on_start: 0
 --- !u!4 &12905863
 Transform:
   m_ObjectHideFlags: 0
@@ -6254,7 +6254,8 @@ MonoBehaviour:
   animat_creator_camera: {fileID: 1534904640}
   brain_viewer_camera: {fileID: 706435471}
   brain_creator_camera: {fileID: 1490511221}
-  NUM_IN_GENERATION: 0
+  timer: 0
+  NUM_IN_GENERATION: 50
   TIME_PER_GENERATION: 10
   REPRODUCTIVE_MODE: 2
 --- !u!1 &1775555016
@@ -6834,7 +6835,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pages_panel: {fileID: 391361393}
   pages_button_prefab: {fileID: 0}
-  initialize_on_start: 1
+  initialize_on_start: 0
 --- !u!222 &2065025851
 CanvasRenderer:
   m_ObjectHideFlags: 0

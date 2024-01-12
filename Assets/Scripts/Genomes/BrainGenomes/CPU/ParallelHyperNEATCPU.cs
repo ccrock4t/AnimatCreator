@@ -76,8 +76,7 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
 
     CPPNOutputArray EvaluateCPPN(int i, int x1, int y1, int z1, int x2, int y2, int z2)
     {
-        CPPNOutputArray output_array = new();
-        output_array.hebb_ABCD_coefficients = new float4(0, 0, 0, 0);
+        CPPNOutputArray output_array = CPPNOutputArray.GetNewDefault();
 
         int node_idx_offset = i * NUM_OF_NODES;
         int k;
@@ -145,19 +144,19 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
             }
             else if (m == 2)
             {
-                output_array.hebb_ABCD_coefficients[0] = result;
+                output_array.hebb_ABCD_coefficients[0] = ABCD_multiplier * result;
             }
             else if (m == 3)
             {
-                output_array.hebb_ABCD_coefficients[1] = result;
+                output_array.hebb_ABCD_coefficients[1] = ABCD_multiplier * result;
             }
             else if (m == 4)
             {
-                output_array.hebb_ABCD_coefficients[2] = result;
+                output_array.hebb_ABCD_coefficients[2] = ABCD_multiplier * result;
             }
             else if (m == 5)
             {
-                output_array.hebb_ABCD_coefficients[3] = result;
+                output_array.hebb_ABCD_coefficients[3] = ABCD_multiplier * result;
             }
             else if (m == 6)
             {
@@ -165,7 +164,7 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
             }
             else if (m == 7)
             {
-                output_array.sigmoid_alpha = result;
+                output_array.sigmoid_alpha = multiplier * math.abs(result);
             }
             else if (m == 8)
             {
@@ -202,8 +201,7 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
         return output_array;
     }
 
-    const float multiplier = 0.05f;
-    const float ABCD_multiplier = 0.05f;
+
     void Evaluate(int i)
     {
         int neuron1_flat_idx = (int)math.floor(i / TOTAL_SUBSTRATE_SIZE());
@@ -224,6 +222,7 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
         CPPNOutputArray CPPN_outputs = EvaluateCPPN(i, x2, y2, z2, x1, y1, z1); //from neuron2 to neuron1
 
         bool neuron1_is_sensor = (z1 == 0);
+        bool neuron1_is_motor = (z1 == SUBSTRATE_SIZE_Z-1);
         float initial_weight = CPPN_outputs.initial_weight;
         float learning_rate = CPPN_outputs.learning_rate;
 
@@ -244,11 +243,11 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
         }
         else
         {
-            synapse.learning_rate_r = ABCD_multiplier * learning_rate;
-            synapse.coefficient_A = ABCD_multiplier * CPPN_outputs.hebb_ABCD_coefficients[0];
-            synapse.coefficient_B = ABCD_multiplier * CPPN_outputs.hebb_ABCD_coefficients[1];
-            synapse.coefficient_C = ABCD_multiplier * CPPN_outputs.hebb_ABCD_coefficients[2];
-            synapse.coefficient_D = ABCD_multiplier * CPPN_outputs.hebb_ABCD_coefficients[3];
+            synapse.learning_rate_r = learning_rate;
+            synapse.coefficient_A = CPPN_outputs.hebb_ABCD_coefficients[0];
+            synapse.coefficient_B = CPPN_outputs.hebb_ABCD_coefficients[1];
+            synapse.coefficient_C = CPPN_outputs.hebb_ABCD_coefficients[2];
+            synapse.coefficient_D = CPPN_outputs.hebb_ABCD_coefficients[3];
             synapse.weight = initial_weight;
             synapse.enabled = true;
         }
@@ -257,12 +256,12 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
         if (x2 == 0 && y2 == 0 && z2 == 0)
         {
             neuron1.type = Neuron.NeuronType.Perceptron;
-            neuron1.activation_function = Neuron.NeuronActivationFunction.Tanh;// (neuron1_is_sensor || neuron1_is_motor) ? Neuron.NeuronActivationFunction.Tanh : CPPN_outputs.activation_function;
+            neuron1.activation_function = (neuron1_is_sensor || neuron1_is_motor) ? Neuron.NeuronActivationFunction.Tanh : CPPN_outputs.activation_function;
 
-            neuron1.sign = 1;// CPPN_outputs.sign;
+            neuron1.sign = CPPN_outputs.sign;
 
             neuron1.bias = CPPN_outputs.bias;
-            neuron1.sigmoid_alpha = multiplier * math.abs(CPPN_outputs.sigmoid_alpha);
+            neuron1.sigmoid_alpha = CPPN_outputs.sigmoid_alpha;
 
 
             neuron1.synapse_start_idx = neuron1_flat_idx * TOTAL_SUBSTRATE_SIZE();
@@ -275,16 +274,5 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
     }
 
 
-    struct CPPNOutputArray
-    {
-        public float initial_weight;
-        public float learning_rate;
-        public float4 hebb_ABCD_coefficients;
-        public float bias;
-        public int sign;
-        public float sigmoid_alpha;
-        public Neuron.NeuronActivationFunction activation_function;
-        public bool enabled;
-    };
 
 }

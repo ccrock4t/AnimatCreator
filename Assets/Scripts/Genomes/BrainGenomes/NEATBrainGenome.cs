@@ -5,6 +5,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using static Brain;
+using static GlobalConfig;
 using Random = UnityEngine.Random;
 
 public class NEATBrainGenome : BrainGenome
@@ -22,9 +23,11 @@ public class NEATBrainGenome : BrainGenome
     public float NODE_MUTATION_RATE_MUTATION_RATE = 0.1f;
     public float HEBB_INCREMENT = 0.05f;
 
+    int num_of_joints;
 
     public NEATBrainGenome()
     {
+        this.num_of_joints = GlobalConfig.creature_to_use == Creature.Hexapod ? 21 : 14; // hexapod or quadruped
         this.neuron_genome = new();
         this.connection_genome = new();
     }
@@ -54,7 +57,7 @@ public class NEATBrainGenome : BrainGenome
     public void InsertHexapodSensorimotorNeurons()
     {
         // insert sensory neurons
-        for (int i = 0; i <= 20; i++) // 20 joints in hexapod
+        for (int i = 0; i < this.num_of_joints; i++) 
         {
             string joint_key = Animat.GetSensorimotorJointKey(i);
 
@@ -76,8 +79,10 @@ public class NEATBrainGenome : BrainGenome
 
         }
 
+        int motor_neuron_start_idx = this.neuron_genome.Count;
+
         // insert motor neurons
-        for (int i = 0; i <= 20; i++) // 20 joints in hexapod
+        for (int i = 0; i < this.num_of_joints; i++) 
         {
             string joint_key = Animat.GetSensorimotorJointKey(i);
 
@@ -87,6 +92,8 @@ public class NEATBrainGenome : BrainGenome
             this.InsertNeuron(extradata: "MOTORLAYER_" + joint_key + "_R", id: this.neuron_genome.Count);
 
         }
+
+        int hidden_neuron_start_idx = this.neuron_genome.Count;
 
         // insert hidden neurons
         for (int i = 0; i <= 128; i++) 
@@ -104,17 +111,17 @@ public class NEATBrainGenome : BrainGenome
         // insert full connections
 
 
-        for (int i = 0; i < 210; i++) 
+        for (int i = 0; i < motor_neuron_start_idx; i++)  // from sensors
         {
-            for (int k = 273; k < this.neuron_genome.Count; k++)
+            for (int k = hidden_neuron_start_idx; k < this.neuron_genome.Count; k++) // to hidden
             {
                 InsertConnection(i, k, this.connection_genome.Count);
             }
         }
 
-        for (int i = 210; i < 273; i++) 
+        for (int i = hidden_neuron_start_idx; i < this.neuron_genome.Count; i++)  // from hidden
         {
-            for (int k = 273; k < this.neuron_genome.Count; k++)
+            for (int k = motor_neuron_start_idx; k < hidden_neuron_start_idx; k++) // to motor
             {
                 InsertConnection(i, k, this.connection_genome.Count);
             }
@@ -132,7 +139,7 @@ public class NEATBrainGenome : BrainGenome
         NEATBrainGenome clone = new NEATBrainGenome();
         foreach(NEATDevelopmentNeuron neuron in this.neuron_genome)
         {
-            NEATDevelopmentNeuron neuron_clone = neuron.Clone();
+            NEATDevelopmentNeuron neuron_clone = (NEATDevelopmentNeuron)neuron.Clone();
             clone.neuron_genome.Add(neuron_clone);
         }
 
@@ -189,7 +196,7 @@ public class NEATBrainGenome : BrainGenome
 
                 if (sensor_type != "TOUCHSENSE" && sensor_type != "ROTATESENSE")
                 {
-                    neuron.position = new int3(position_array[2], 0, 10);
+                    neuron.position = new int3(position_array[2], Random.Range(0, 20), 10);
                     position_array[2] += 3;
                     // no sensor type
                     // this is a motor (output) neuron, so turn it into a perceptron
@@ -218,7 +225,7 @@ public class NEATBrainGenome : BrainGenome
                 }
                 else
                 {
-                    neuron.position = new int3(position_array[1]++, 0, 0);
+                    neuron.position = new int3(position_array[1]++, Random.Range(0,20), 0);
                     // this is a sensory (input) neuron, so turn it into a perceptron
                     neuron.type = Neuron.NeuronType.Perceptron;
 
@@ -303,7 +310,7 @@ public class NEATBrainGenome : BrainGenome
             }
             else
             {
-                neuron.position = new int3(position_array[0]++, 0, 5);
+                neuron.position = new int3(position_array[0]++, Random.Range(0, 20), 5);
             }
 
 
@@ -316,22 +323,23 @@ public class NEATBrainGenome : BrainGenome
         foreach (NEATDevelopmentSynapse c in this.connection_genome)
         {
             int from_neuron_idx = neuronID_to_idx[c.from_ID];
+            int to_neuron_idx = neuronID_to_idx[c.to_ID];
 
             List<Synapse> synapses;
-            if (neuron_idx_to_synapse.ContainsKey(from_neuron_idx))
+            if (neuron_idx_to_synapse.ContainsKey(to_neuron_idx))
             {
-                synapses = neuron_idx_to_synapse[from_neuron_idx];
+                synapses = neuron_idx_to_synapse[to_neuron_idx];
             }
             else
             {
                 synapses = new();
-                neuron_idx_to_synapse[from_neuron_idx] = synapses;
+                neuron_idx_to_synapse[to_neuron_idx] = synapses;
             }
             
 
             Synapse connection = new(learning_rate: c.learning_rate,
                         from_neuron_idx: from_neuron_idx,
-                        to_neuron_idx: -1,
+                        to_neuron_idx: to_neuron_idx,
                         coefficients: c.coefficients);
             synapses.Add(connection);
         }
@@ -550,7 +558,7 @@ public class NEATBrainGenome : BrainGenome
             if (neuron1 != null && neuron2 != null)
             {
                 int rnd = Random.Range(0, 2);
-                NEATDevelopmentNeuron neuron_merged = neuron1.Clone();
+                NEATDevelopmentNeuron neuron_merged = (NEATDevelopmentNeuron)neuron1.Clone();
                 neuron_merged.bias = (neuron1.bias + neuron2.bias)/ 2;
                 neuron_merged.sigmoid_alpha = (neuron1.sigmoid_alpha + neuron2.sigmoid_alpha) / 2;
                 offspring1.neuron_genome.Add(neuron_merged);
@@ -651,7 +659,7 @@ public class NEATBrainGenome : BrainGenome
         throw new System.NotImplementedException();
     }
 
-    public override BrainGenome LoadFromDisk()
+    public static BrainGenome LoadFromDisk(string filename = "")
     {
         throw new System.NotImplementedException();
     }
@@ -726,7 +734,7 @@ public class NEATBrainGenome : BrainGenome
 
 
 
-        public new NEATDevelopmentNeuron Clone()
+        public override DevelopmentNeuron Clone()
         {
             NEATDevelopmentNeuron clone = new(this.ID,
                 this.threshold,
@@ -765,7 +773,7 @@ public class NEATBrainGenome : BrainGenome
 
     public override JobHandle ScheduleDevelopCPUJob()
     {
-        throw new System.NotImplementedException();
+        return new JobHandle();
     }
 
     public override void ScheduleDevelopGPUJob()

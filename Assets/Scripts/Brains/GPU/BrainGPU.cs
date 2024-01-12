@@ -170,4 +170,9 @@ public class BrainGPU : Brain
     {
         return this.current_state_neurons.count;
     }
+
+    public override void SaveToDisk()
+    {
+        throw new System.NotImplementedException();
+    }
 }
