@@ -1,12 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
-using static AxonalGrowthBrainGenome;
-using static BrainGenomeTree;
-using static CellularEncodingBrainGenome;
-using static GraphVisualization2D;
 
 public class BrainCreatorGUINode : MonoBehaviour
 {
@@ -27,7 +20,7 @@ public class BrainCreatorGUINode : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     /// <summary>
@@ -40,7 +33,7 @@ public class BrainCreatorGUINode : MonoBehaviour
         this.creator = creator;
     }
 
-  
 
-    
+
+
 }

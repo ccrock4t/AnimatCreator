@@ -1,14 +1,8 @@
-using NUnit.Framework;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Threading;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
-using static BrainGenomeTree;
 
 public class BrainCPU : Brain
 {
@@ -24,7 +18,7 @@ public class BrainCPU : Brain
 
     }
 
-    public override void DevelopFromGenome() 
+    public override void DevelopFromGenome()
     {
         this.Develop(this.genome);
     }
@@ -59,12 +53,12 @@ public class BrainCPU : Brain
 
     }
 
-    
+
 
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public override void DisposeOfNativeCollections()
@@ -104,13 +98,13 @@ public class BrainCPU : Brain
         data_file.Close();
     }
 
-    public static (NativeArray<Neuron>, NativeArray<Synapse>) LoadFromDisk(string filename="")
+    public static (NativeArray<Neuron>, NativeArray<Synapse>) LoadFromDisk(string filename = "")
     {
-     
+
         if (filename == "")
         {
             string[] existing_saves = Directory.GetFiles(path: GlobalConfig.save_file_path, searchPattern: GlobalConfig.save_file_base_name + "*" + save_file_extension);
-            int num_files = existing_saves.Length-1;
+            int num_files = existing_saves.Length - 1;
             filename = GlobalConfig.save_file_base_name + num_files.ToString();
         }
 
@@ -126,13 +120,13 @@ public class BrainCPU : Brain
             object obj = formatter.Deserialize(fs);
             // = new object[] { this.current_state_neurons.ToArray(), this.current_state_synapses.ToArray() };
             var newlist = (object[])obj;
-            for(int i=0; i < newlist.Length; i++) 
+            for (int i = 0; i < newlist.Length; i++)
             {
                 if (i == 0)
                 {
                     neuron_array = (Neuron[])newlist[i];
                 }
-                else if(i == 1)
+                else if (i == 1)
                 {
                     synapse_array = (Synapse[])newlist[i];
                 }
@@ -140,14 +134,14 @@ public class BrainCPU : Brain
                 {
                     Debug.LogWarning("ERROR LOADING BRAIN");
                 }
-                
+
             }
         }
 
         NativeArray<Neuron> native_neuron_array = new(neuron_array.Length, Allocator.Persistent);
         NativeArray<Synapse> native_synapse_array = new(synapse_array.Length, Allocator.Persistent);
 
-        for(int i = 0; i < neuron_array.Length; i++)
+        for (int i = 0; i < neuron_array.Length; i++)
         {
             native_neuron_array[i] = neuron_array[i];
         }

@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -36,7 +34,7 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
 
     public void Execute(int index)
     {
- 
+
         Evaluate(index);
     }
 
@@ -119,7 +117,7 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
         }
 
 
- 
+
 
 
         // do hidden nodes
@@ -168,14 +166,15 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
             }
             else if (m == 8)
             {
-                
+
 
                 if (result >= -1 && result <= -0.33)
                 {
                     output_array.activation_function = Neuron.NeuronActivationFunction.Sigmoid;
-                   
+
                 }
-                else if (result >= -0.33 && result <= 0.33) {
+                else if (result >= -0.33 && result <= 0.33)
+                {
                     output_array.activation_function = Neuron.NeuronActivationFunction.Tanh;
                 }
                 else //   result > 0.25
@@ -222,7 +221,7 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
         CPPNOutputArray CPPN_outputs = EvaluateCPPN(i, x2, y2, z2, x1, y1, z1); //from neuron2 to neuron1
 
         bool neuron1_is_sensor = (z1 == 0);
-        bool neuron1_is_motor = (z1 == SUBSTRATE_SIZE_Z-1);
+        bool neuron1_is_motor = (z1 == SUBSTRATE_SIZE_Z - 1);
         float initial_weight = CPPN_outputs.initial_weight;
         float learning_rate = CPPN_outputs.learning_rate;
 
@@ -270,7 +269,7 @@ public struct ParallelHyperNEATCPU : IJobParallelFor
             neurons[neuron1_flat_idx] = neuron1;
         }
 
-        
+
     }
 
 

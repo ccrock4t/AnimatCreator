@@ -1,8 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
-using VertexData = System.Tuple<UnityEngine.Vector3, UnityEngine.Vector3, UnityEngine.Vector2>;
 
 public class VoxelUtils : MonoBehaviour
 {

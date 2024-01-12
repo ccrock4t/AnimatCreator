@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using static BodyGenome;
@@ -7,8 +6,8 @@ public class AnimatBody : MonoBehaviour
 {
     public enum BodySegmentType
     {
-        Cube=0,
-        Sphere=1
+        Cube = 0,
+        Sphere = 1
     }
 
     // 3d objects
@@ -27,7 +26,7 @@ public class AnimatBody : MonoBehaviour
     public const float STIFFNESS = 500f;
     public const float MASS = 1.25f;
     public const float DAMPING = 25.75f;
-   
+
 
     public WaitForSeconds wfs;
 
@@ -35,7 +34,7 @@ public class AnimatBody : MonoBehaviour
 
     public void Awake()
     {
-        if(AnimatBody.body_segment_prefabs == null)
+        if (AnimatBody.body_segment_prefabs == null)
         {
             AnimatBody.body_segment_prefabs = new GameObject[2];
             AnimatBody.body_segment_prefabs[(int)BodySegmentType.Cube] = (GameObject)Resources.Load("Prefabs/Body/BodySegmentType0");
@@ -54,7 +53,7 @@ public class AnimatBody : MonoBehaviour
     /// <param name="activation"></param>
     public void SetXDrive(ArticulationBody joint, float activation)
     {
-       joint.xDrive = SetDrive(joint.xDrive, activation);
+        joint.xDrive = SetDrive(joint.xDrive, activation);
     }
 
 
@@ -79,7 +78,7 @@ public class AnimatBody : MonoBehaviour
 
 
 
-   
+
     /// <summary>
     /// 
     /// </summary>
@@ -87,20 +86,20 @@ public class AnimatBody : MonoBehaviour
     /// <param name="activation"></param>
     public ArticulationDrive SetDrive(ArticulationDrive drive, float activation)
     {
-  /*      // period
-        float seconds_per_degree = 0.1f;
+        /*      // period
+              float seconds_per_degree = 0.1f;
 
-        float speed = Time.fixedDeltaTime/seconds_per_degree;
-        float rotationChange = activation * speed;
+              float speed = Time.fixedDeltaTime/seconds_per_degree;
+              float rotationChange = activation * speed;
 
-        drive.target += rotationChange;
+              drive.target += rotationChange;
 
-        drive.target = Mathf.Min(drive.target, DRIVE_LIMITS);
-        drive.target = Mathf.Max(drive.target, -DRIVE_LIMITS);*/
+              drive.target = Mathf.Min(drive.target, DRIVE_LIMITS);
+              drive.target = Mathf.Max(drive.target, -DRIVE_LIMITS);*/
 
         drive.target = activation * DRIVE_LIMITS;
-        if(drive.target > DRIVE_LIMITS) drive.target = DRIVE_LIMITS;
-        if(drive.target < -DRIVE_LIMITS) drive.target = -DRIVE_LIMITS;
+        if (drive.target > DRIVE_LIMITS) drive.target = DRIVE_LIMITS;
+        if (drive.target < -DRIVE_LIMITS) drive.target = -DRIVE_LIMITS;
         return drive;
     }
 
@@ -111,7 +110,7 @@ public class AnimatBody : MonoBehaviour
     {
         segments = new();
         InstantiateNode(genome.node_array, genome.node_array[0], null);
-        foreach(ArticulationBody ab in this.segments)
+        foreach (ArticulationBody ab in this.segments)
         {
             ab.enabled = true;
         }
@@ -131,7 +130,7 @@ public class AnimatBody : MonoBehaviour
     {
         if (n.recursive_limit <= 0) return;
 
-        
+
 
         GameObject nodeGO;
         float scaleFactor;
@@ -186,14 +185,14 @@ public class AnimatBody : MonoBehaviour
                 local_drive.driveType = GlobalConfig.USE_FORCE_MODE ? ArticulationDriveType.Force : ArticulationDriveType.Force;
                 return local_drive;
             }
-        
+
             if (ab.jointType == ArticulationJointType.RevoluteJoint)
             {
                 drive = ab.xDrive;
                 drive = SetDriveProperties(drive);
                 ab.xDrive = drive;
             }
-            else if(ab.jointType == ArticulationJointType.SphericalJoint)
+            else if (ab.jointType == ArticulationJointType.SphericalJoint)
             {
                 drive = ab.xDrive;
                 drive = SetDriveProperties(drive);
@@ -238,24 +237,24 @@ public class AnimatBody : MonoBehaviour
         if (n.name == "leg node")
         {
             segment.Find("Cube").GetComponent<Renderer>().material = green;
-            
+
 
         }
-        else if(n.name == "body node")
+        else if (n.name == "body node")
         {
             segment.Find("Cube").GetComponent<Renderer>().material = red;
-    
+
         }
         else if (n.name == "foot node")
         {
-           
+
         }
-        
+
 
         nodeGO.GetComponent<BoxCollider>().center = Vector3.Scale(nodeGO.GetComponent<BoxCollider>().center, segment.transform.localScale);
         nodeGO.GetComponent<BoxCollider>().size = Vector3.Scale(nodeGO.GetComponent<BoxCollider>().size, segment.transform.localScale);
-        
-       
+
+
 
         n.recursive_limit--; // lower the recursive limit in case this node occurs in a cycle
         foreach (MorphologyConnection connection in n.connections)

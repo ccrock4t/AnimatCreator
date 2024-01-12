@@ -1,17 +1,10 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Transforms;
-using UnityEditor.MemoryProfiler;
 using UnityEngine;
 using static Brain;
 using static Brain.Neuron;
-using static BrainGenome;
-using static ESHyperNEATBrainGenome;
-using static GlobalConfig;
 
 public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
 {
@@ -36,7 +29,7 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
 
     public ESHyperNEATBrainGenome() : base()
     {
-        this.cppn_special_point = new float3(0,0,0);
+        this.cppn_special_point = new float3(0, 0, 0);
         this.substrate_dimensions = new int3(this.num_of_joints, this.num_of_joints, this.num_of_joints);
 
         // evolvable substrate is stored implicitly
@@ -152,14 +145,14 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
             LabelSensoryMotorNeuron(development_neuron, native_neuron_idx, neuron_indices);
         }
 
-        (Dictionary<ESNeuron, List<ESSynapse>> input_to_hidden, 
-            Dictionary<ESNeuron, List <ESSynapse>> hidden_to_hidden, 
+        (Dictionary<ESNeuron, List<ESSynapse>> input_to_hidden,
+            Dictionary<ESNeuron, List<ESSynapse>> hidden_to_hidden,
             Dictionary<ESNeuron, List<ESSynapse>> hidden_to_output) = ESHyperNEATAlgorithm();
 
 
         // add hidden neurons
         var neuron_octpoints = new[] { input_to_hidden, hidden_to_hidden, hidden_to_output };
-        foreach(Dictionary<ESNeuron, List<ESSynapse>> neuron_octpoint_dict in neuron_octpoints)
+        foreach (Dictionary<ESNeuron, List<ESSynapse>> neuron_octpoint_dict in neuron_octpoints)
         {
             foreach (KeyValuePair<ESNeuron, List<ESSynapse>> hidden_neuron_octpoint in neuron_octpoint_dict)
             {
@@ -192,14 +185,14 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
                     synapse.to_neuron_idx = native_output_neuron_index;
                     if (!neuron_synapses.ContainsKey(synapse.to_neuron_idx)) neuron_synapses[synapse.to_neuron_idx] = new();
                     neuron_synapses[synapse.to_neuron_idx].Add(synapse);
-             
+
                 }
-   
+
             }
         }
 
         // associate neurons and connections
-        for (int i=0; i< native_neurons.Count; i++)
+        for (int i = 0; i < native_neurons.Count; i++)
         {
             if (!neuron_synapses.ContainsKey(i)) continue;
             Neuron neuron = native_neurons[i];
@@ -248,7 +241,7 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
         }
         else
         {
- 
+
 
             // connect to sensory interface
             int tree_idx = -1;
@@ -336,7 +329,7 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
         {
             string joint_key = Animat.GetSensorimotorJointKey(x);
 
-            int3 coords = new int3(-this.num_of_joints + 2*x, -this.num_of_joints, -this.num_of_joints);
+            int3 coords = new int3(-this.num_of_joints + 2 * x, -this.num_of_joints, -this.num_of_joints);
             // 10 for the sensor
             this.InsertNeuron(coords, extradata: "SENSORLAYER_" + joint_key + "_TOUCHSENSE" + "_LLL");
             coords.y += 2;
@@ -386,9 +379,9 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
             (float)z / this.substrate_dimensions.z);
         if (neuron_sensorymotor_type == "SENSORLAYER")
         {
-            this.input_positions.Add((neuron,neuron_position));
+            this.input_positions.Add((neuron, neuron_position));
         }
-        else if(neuron_sensorymotor_type == "MOTORLAYER")
+        else if (neuron_sensorymotor_type == "MOTORLAYER")
         {
             this.output_positions.Add((neuron, neuron_position));
         }
@@ -417,7 +410,7 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
         foreach ((_, float3 input_position) in this.input_positions)
         {
             OctPoint root = DivisionAndInitialization(input_position.x, input_position.y, input_position.z, true);
-            PruningAndExtraction(input_position.x, input_position.y, input_position.z, input_to_hidden_connections, root, true);     
+            PruningAndExtraction(input_position.x, input_position.y, input_position.z, input_to_hidden_connections, root, true);
         }
 
 
@@ -427,7 +420,7 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
         Dictionary<ESNeuron, List<ESSynapse>> hidden_to_hidden_connections = new();
         Stack<ESNeuron> nodes_to_explore = new(input_to_hidden_connections.Keys);
         HashSet<ESNeuron> explored_nodes = new();
-        for(int i=0; i < ITERATION_LEVEL; i++)
+        for (int i = 0; i < ITERATION_LEVEL; i++)
         {
             Stack<ESNeuron> new_nodes_to_explore = new();
             while (nodes_to_explore.Count > 0)
@@ -438,7 +431,7 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
                 OctPoint root = DivisionAndInitialization(hidden_node_position.x, hidden_node_position.y, hidden_node_position.z, true);
                 PruningAndExtraction(hidden_node_position.x, hidden_node_position.y, hidden_node_position.z, hidden_to_hidden_connections, root, true);
 
-                foreach(ESNeuron es_Neuron in hidden_to_hidden_connections.Keys)
+                foreach (ESNeuron es_Neuron in hidden_to_hidden_connections.Keys)
                 {
                     if (!explored_nodes.Contains(es_Neuron))
                     {
@@ -487,14 +480,14 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
         Queue<OctPoint> queue = new();
         queue.Enqueue(root);
 
-        while(queue.Count != 0)
+        while (queue.Count != 0)
         {
             // get the midpoint p
             OctPoint p = queue.Dequeue();
 
             // divide 3D space into subregions and assign children to parent
             int child_idx = 0;
-            foreach(int i in axis_multipliers)
+            foreach (int i in axis_multipliers)
             {
                 foreach (int j in axis_multipliers)
                 {
@@ -505,7 +498,7 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
                             y: p.y + j * p.width / 2,
                             z: p.z + k * p.width / 2,
                             width: p.width / 2,
-                            level: p.level + 1); 
+                            level: p.level + 1);
 
                         // now query CPPN value for input/output neuron (a,b,c) connection with hidden neuron 'p', located at (x,y,z)
                         if (outgoing)
@@ -525,13 +518,14 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
 
             // divide until minimum resolution or if variance still too high
             float variance = calculate_variance(p);
-            if (p.level < min_depth || (p.level < max_depth && variance > DIVISION_THRESHOLD)){
-                foreach(OctPoint child in p.children)
+            if (p.level < min_depth || (p.level < max_depth && variance > DIVISION_THRESHOLD))
+            {
+                foreach (OctPoint child in p.children)
                 {
                     queue.Enqueue(child);
                 }
             }
-           
+
 
         }
 
@@ -548,12 +542,12 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
     /// <param name="connections"></param>
     /// <param name="p"></param>
     /// <param name="outgoing"></param>
-    public void PruningAndExtraction(float a, float b, float c, Dictionary<ESNeuron,List<ESSynapse>> connections, OctPoint p, bool outgoing)
+    public void PruningAndExtraction(float a, float b, float c, Dictionary<ESNeuron, List<ESSynapse>> connections, OctPoint p, bool outgoing)
     {
-    
-        foreach(OctPoint child in p.children)
+
+        foreach (OctPoint child in p.children)
         {
-            if(calculate_variance(child) >= VARIANCE_THRESHOLD)
+            if (calculate_variance(child) >= VARIANCE_THRESHOLD)
             {
                 PruningAndExtraction(a, b, c, connections, child, outgoing);
             }
@@ -599,7 +593,7 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
                     {
                         // connection goes from hidden to output neuron
                         new_connection = new(input_coords: new float3(child.x, child.y, child.z),
-                                    output_coords: new float3(a, b, c) ,
+                                    output_coords: new float3(a, b, c),
                                     CPPNoutputs: child.value);
                     }
                     ESNeuron to_es_neuron = GetESNeuronFromCoords(new_connection.output_coords);
@@ -626,8 +620,8 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
 
     float calculate_variance(OctPoint p)
     {
-      
-            
+
+
         if (p.children[0] == null)
         {
             p.variance = 0; // leaf node
@@ -635,10 +629,10 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
         }
         else
         {
-                
+
             // calculate the mean of each variable
             CPPNOutputArray mean = CPPNOutputArray.GetNewDefault();
-  
+
             float scalar_mean = 0;
             for (int i = 0; i < p.children.Length; i++)
             {
@@ -697,7 +691,7 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
 
             return USE_SCALAR_VARIANCE ? total_scalar_variance : total_variance;
         }
-        
+
 
     }
 
@@ -734,7 +728,7 @@ public class ESHyperNEATBrainGenome : HyperNEATBrainGenome
         }
     }
 
- 
+
 
     public class OctPoint
     {

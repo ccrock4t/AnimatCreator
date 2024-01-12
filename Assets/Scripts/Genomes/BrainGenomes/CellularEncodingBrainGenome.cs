@@ -18,20 +18,21 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
 
 
     // constructors
-    public CellularEncodingBrainGenome() : base(){
+    public CellularEncodingBrainGenome() : base()
+    {
         ProgramSymbolTree root = new(CECellularInstruction.END);
         this.forest.Add(root);
         this.size = root.size;
     }
 
-    public CellularEncodingBrainGenome(ProgramSymbolTree root) : base(root) {}
+    public CellularEncodingBrainGenome(ProgramSymbolTree root) : base(root) { }
 
     public CellularEncodingBrainGenome(List<ProgramSymbolTree> trees) : base(trees) { }
 
 
     public override ProgramSymbolTree GenerateRandomMutation()
     {
-        int tree_length = UnityEngine.Random.Range(1, MUTATION_TREE_DEPTH+1);
+        int tree_length = UnityEngine.Random.Range(1, MUTATION_TREE_DEPTH + 1);
 
         ProgramSymbolTree root = default;
         ProgramSymbolTree previous = default;
@@ -134,7 +135,7 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
         return (offspring1, offspring2);
     }
 
- 
+
 
     /// <summary>
     /// Are we currently preventing this instruction from entering/leaving the gene pool
@@ -457,7 +458,7 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
         B.extrainfo = "TOPLEGSEG";
 
         A0 = new(CECellularInstruction.PARALLEL_DIVISION, children: new ProgramSymbolTree[] { A, B });
-        B0 = new(CECellularInstruction.JUMP, arguments: new int[] { LSS.tree_index - index}); // LSS
+        B0 = new(CECellularInstruction.JUMP, arguments: new int[] { LSS.tree_index - index }); // LSS
         B0.extrainfo = "FOOTSEG";
 
         ProgramSymbolTree LS = new(CECellularInstruction.PARALLEL_DIVISION, new ProgramSymbolTree[] { A0, B0 });
@@ -583,7 +584,7 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
         return new CellularEncodingBrainGenome(ROOT);
     }
 
-  
+
 
     /// <summary>
     /// Develop brain from the genomee
@@ -1002,8 +1003,8 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
                         }
                         cell.MoveToChildA();
                         break;
-                                    /*    case CellularInstruction.MERGE:
-                                            break;*/
+                    /*    case CellularInstruction.MERGE:
+                            break;*/
 
                     case CECellularInstruction.JUMP:
                         int tree_index = cell.instruction_pointer.tree_index;
@@ -1041,7 +1042,7 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
         // at this point, network is fully developed
         // so convert the network into structs for parallel processing
         // allocate temporary memory to develop the brain
-  
+
 
         int num_of_connections = 0;
 
@@ -1102,9 +1103,9 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
 
             }
 
- 
+
             final_brain_neurons.Add(neuron);
-   
+
             foreach (TreeDevelopmentSynapse c in cell.inputs)
             {
                 if (c.from_pointer is TreeDevelopmentNeuron)
@@ -1121,7 +1122,7 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
         {
             TreeDevelopmentNeuron cell = (TreeDevelopmentNeuron)developed_brain[i];
             Neuron neuron = final_brain_neurons[i];
-     
+
             neuron.synapse_start_idx = synapse_idx;
 
             foreach (TreeDevelopmentSynapse c in cell.inputs)
@@ -1236,7 +1237,7 @@ public class CellularEncodingBrainGenome : BrainGenomeTree
 
 
             final_brain_neurons[i] = neuron;
-     
+
 
         }
 

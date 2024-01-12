@@ -1,7 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using static BrainGenomeTree;
 
 // from https://llimllib.github.io/pymag-trees/
 public class GraphVisualization2D

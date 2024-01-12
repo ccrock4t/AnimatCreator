@@ -1,14 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
-using Unity.Jobs;
 using Unity.Mathematics;
-using UnityEditor;
 using UnityEngine;
-using static Brain;
 using static BrainGenome;
-using static UnityEngine.Rendering.VirtualTexturing.Debugging;
 
 public abstract class Brain
 {
@@ -53,12 +48,12 @@ public abstract class Brain
     {
         if (GlobalConfig.brain_genome_development_processing_method == GlobalConfig.ProcessingMethod.CPU)
         {
-             genome.ScheduleDevelopCPUJob();
+            genome.ScheduleDevelopCPUJob();
         }
         else if (GlobalConfig.brain_genome_development_processing_method == GlobalConfig.ProcessingMethod.GPU)
         {
             GlobalUtils.LogErrorFeatureNotImplemented("todo -- schedule GPU jobs into a batch");
-            return;   
+            return;
         }
 
     }
@@ -66,7 +61,7 @@ public abstract class Brain
 
     public void Develop(BrainGenome genome)
     {
-        if(GlobalConfig.brain_genome_development_processing_method == GlobalConfig.ProcessingMethod.CPU)
+        if (GlobalConfig.brain_genome_development_processing_method == GlobalConfig.ProcessingMethod.CPU)
         {
             (NativeArray<Neuron> neurons, NativeArray<Synapse> synapses) = genome.DevelopCPU(neuron_indices);
 
@@ -78,7 +73,7 @@ public abstract class Brain
                 ((BrainCPU)this).next_state_neurons = new(((BrainCPU)this).current_state_neurons.Length, Allocator.Persistent);
                 ((BrainCPU)this).next_state_synapses = new(((BrainCPU)this).current_state_synapses.Length, Allocator.Persistent);
             }
-            else if(this is BrainGPU)
+            else if (this is BrainGPU)
             {
                 ((BrainGPU)this).current_state_neurons = new(neurons.Length, Marshal.SizeOf(typeof(Neuron)));
                 ((BrainGPU)this).current_state_synapses = new(synapses.Length, Marshal.SizeOf(typeof(Synapse)));
@@ -90,9 +85,10 @@ public abstract class Brain
             {
                 GlobalUtils.LogErrorEnumNotRecognized("Brain type");
             }
-        }else if(GlobalConfig.brain_genome_development_processing_method == GlobalConfig.ProcessingMethod.GPU)
+        }
+        else if (GlobalConfig.brain_genome_development_processing_method == GlobalConfig.ProcessingMethod.GPU)
         {
-            if(GlobalConfig.brain_genome_method != GlobalConfig.BrainGenomeMethod.HyperNEAT)
+            if (GlobalConfig.brain_genome_method != GlobalConfig.BrainGenomeMethod.HyperNEAT)
             {
                 GlobalUtils.LogErrorFeatureNotImplemented("Developing genomes on GPU is only supported for HyperNEAT genomes.");
                 return;
@@ -114,7 +110,7 @@ public abstract class Brain
                 ((BrainCPU)this).next_state_neurons = new(((BrainCPU)this).current_state_neurons.Length, Allocator.Persistent);
                 ((BrainCPU)this).next_state_synapses = new(((BrainCPU)this).current_state_synapses.Length, Allocator.Persistent);
             }
-            else if(this is BrainGPU)
+            else if (this is BrainGPU)
             {
                 ((BrainGPU)this).current_state_neurons = neurons;
                 ((BrainGPU)this).current_state_synapses = synapses;
@@ -273,7 +269,7 @@ public abstract class Brain
 
         public float TanhSquashSum(float sum)
         {
-            return math.tanh(this.sigmoid_alpha*sum);
+            return math.tanh(this.sigmoid_alpha * sum);
         }
 
         public float ReLUSum(float sum)
@@ -283,7 +279,7 @@ public abstract class Brain
 
         public float LeakyReLUSum(float sum)
         {
-            if(sum < 0)
+            if (sum < 0)
             {
                 return sigmoid_alpha * sum;
             }
@@ -291,7 +287,7 @@ public abstract class Brain
             {
                 return sigmoid_alpha * sum;
             }
-            
+
         }
 
 

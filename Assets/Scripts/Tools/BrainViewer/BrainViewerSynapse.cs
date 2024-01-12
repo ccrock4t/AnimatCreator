@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.Collections;
 using UnityEngine;
 using static Brain;
 
@@ -14,12 +11,12 @@ public class BrainViewerSynapse : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+
     }
 
     void FixedUpdate()
     {
-        
+
     }
 
     public void UpdateLinePosition()

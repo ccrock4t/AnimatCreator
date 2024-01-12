@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class BrainGPU : Brain
@@ -60,9 +58,9 @@ public class BrainGPU : Brain
     {
         if (this.current_neurons == null) return;
         this.current_neurons[index] = neuron;
-       /* Neuron[] data = new Neuron[1];
-        data[0] = neuron;
-        current_state_neurons.SetData(data, 0, index, 1);*/
+        /* Neuron[] data = new Neuron[1];
+         data[0] = neuron;
+         current_state_neurons.SetData(data, 0, index, 1);*/
     }
 
     public Synapse GetCurrentSynapse(int index)
@@ -73,7 +71,7 @@ public class BrainGPU : Brain
         return this.current_synapses[index];
     }
 
-   
+
 
 
     public void SetCurrentSynapse(int index, Synapse synapse)
@@ -149,8 +147,8 @@ public class BrainGPU : Brain
 
     public void TransferFromGPUToCPU()
     {
-        this.current_state_neurons.GetData(this.current_neurons,0,0, this.current_neurons.Length);
-        if(RETRIEVE_SYNAPSE_DATA) this.current_state_synapses.GetData(this.current_synapses, 0, 0, this.current_synapses.Length);
+        this.current_state_neurons.GetData(this.current_neurons, 0, 0, this.current_neurons.Length);
+        if (RETRIEVE_SYNAPSE_DATA) this.current_state_synapses.GetData(this.current_synapses, 0, 0, this.current_synapses.Length);
     }
 
     public override void DisposeOfNativeCollections()

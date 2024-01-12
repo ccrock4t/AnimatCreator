@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
@@ -57,7 +56,7 @@ public class NEATBrainGenome : BrainGenome
     public void InsertHexapodSensorimotorNeurons()
     {
         // insert sensory neurons
-        for (int i = 0; i < this.num_of_joints; i++) 
+        for (int i = 0; i < this.num_of_joints; i++)
         {
             string joint_key = Animat.GetSensorimotorJointKey(i);
 
@@ -82,7 +81,7 @@ public class NEATBrainGenome : BrainGenome
         int motor_neuron_start_idx = this.neuron_genome.Count;
 
         // insert motor neurons
-        for (int i = 0; i < this.num_of_joints; i++) 
+        for (int i = 0; i < this.num_of_joints; i++)
         {
             string joint_key = Animat.GetSensorimotorJointKey(i);
 
@@ -96,17 +95,17 @@ public class NEATBrainGenome : BrainGenome
         int hidden_neuron_start_idx = this.neuron_genome.Count;
 
         // insert hidden neurons
-        for (int i = 0; i <= 128; i++) 
+        for (int i = 0; i <= 128; i++)
         {
             this.InsertNeuron(id: this.neuron_genome.Count);
         }
 
 
 
-/*        for (int i = 0; i <= 12000; i++)
-        {
-            AddRandomConnection();
-        }*/
+        /*        for (int i = 0; i <= 12000; i++)
+                {
+                    AddRandomConnection();
+                }*/
 
         // insert full connections
 
@@ -129,7 +128,7 @@ public class NEATBrainGenome : BrainGenome
 
 
 
-        if(NEXT_NEURON_ID == BrainGenome.INVALID_NEAT_ID) NEXT_NEURON_ID = this.neuron_genome.Count;
+        if (NEXT_NEURON_ID == BrainGenome.INVALID_NEAT_ID) NEXT_NEURON_ID = this.neuron_genome.Count;
         if (NEXT_SYNAPSE_ID == BrainGenome.INVALID_NEAT_ID) NEXT_SYNAPSE_ID = this.connection_genome.Count;
 
     }
@@ -137,7 +136,7 @@ public class NEATBrainGenome : BrainGenome
     public override BrainGenome Clone()
     {
         NEATBrainGenome clone = new NEATBrainGenome();
-        foreach(NEATDevelopmentNeuron neuron in this.neuron_genome)
+        foreach (NEATDevelopmentNeuron neuron in this.neuron_genome)
         {
             NEATDevelopmentNeuron neuron_clone = (NEATDevelopmentNeuron)neuron.Clone();
             clone.neuron_genome.Add(neuron_clone);
@@ -163,7 +162,7 @@ public class NEATBrainGenome : BrainGenome
         List<Synapse> final_brain_synapses = new();
 
         Dictionary<int, List<Synapse>> neuron_idx_to_synapse = new();
-        Dictionary<int, int> neuronID_to_idx = new ();
+        Dictionary<int, int> neuronID_to_idx = new();
 
 
 
@@ -171,7 +170,7 @@ public class NEATBrainGenome : BrainGenome
         string neuron_type;
         string sensor_type;
 
-        int[] position_array = new[] { 0 , 0, 0 };
+        int[] position_array = new[] { 0, 0, 0 };
 
         // first turn all the cells into neurons
         for (int i = 0; i < developed_brain.Count; i++)
@@ -189,7 +188,7 @@ public class NEATBrainGenome : BrainGenome
 
             if (cell.extradata != "")
             {
-   
+
                 strings = cell.extradata.Split("_");
                 neuron_type = strings[strings.Length - 1];
                 sensor_type = strings[strings.Length - 2];
@@ -225,7 +224,7 @@ public class NEATBrainGenome : BrainGenome
                 }
                 else
                 {
-                    neuron.position = new int3(position_array[1]++, Random.Range(0,20), 0);
+                    neuron.position = new int3(position_array[1]++, Random.Range(0, 20), 0);
                     // this is a sensory (input) neuron, so turn it into a perceptron
                     neuron.type = Neuron.NeuronType.Perceptron;
 
@@ -335,7 +334,7 @@ public class NEATBrainGenome : BrainGenome
                 synapses = new();
                 neuron_idx_to_synapse[to_neuron_idx] = synapses;
             }
-            
+
 
             Synapse connection = new(learning_rate: c.learning_rate,
                         from_neuron_idx: from_neuron_idx,
@@ -344,7 +343,7 @@ public class NEATBrainGenome : BrainGenome
             synapses.Add(connection);
         }
 
-        
+
         int synapse_idx = 0;
         for (int i = 0; i < developed_brain.Count; i++)
         {
@@ -387,9 +386,10 @@ public class NEATBrainGenome : BrainGenome
 
             if (rnd < 0.97)
             {
-                
 
-                if(parameter <= 3) {
+
+                if (parameter <= 3)
+                {
                     connection.coefficients[parameter] += UnityEngine.Random.Range(0, 2) == 0 ? HEBB_INCREMENT : -HEBB_INCREMENT;
                 }
                 else
@@ -436,7 +436,7 @@ public class NEATBrainGenome : BrainGenome
             {
                 connection.enabled = false;
             }
-           
+
         }
 
         // then, mutate neuron parameters
@@ -448,19 +448,20 @@ public class NEATBrainGenome : BrainGenome
             int parameter = UnityEngine.Random.Range(0, 2);
             if (rnd < 0.99)
             {
-                if(parameter == 0)
+                if (parameter == 0)
                 {
                     neuron.sigmoid_alpha += UnityEngine.Random.Range(0, 2) == 0 ? HEBB_INCREMENT : -HEBB_INCREMENT;
                 }
-                else if(parameter == 1)
+                else if (parameter == 1)
                 {
                     neuron.bias += UnityEngine.Random.Range(0, 2) == 0 ? HEBB_INCREMENT : -HEBB_INCREMENT;
                 }
-                
-                
-            }else //if(rnd < 0.98)
+
+
+            }
+            else //if(rnd < 0.98)
             {
-                
+
                 if (parameter == 0)
                 {
                     neuron.sigmoid_alpha *= UnityEngine.Random.Range(0, 2) == 0 ? 0.5f : 2.0f;
@@ -470,24 +471,24 @@ public class NEATBrainGenome : BrainGenome
                     neuron.bias *= UnityEngine.Random.Range(0, 2) == 0 ? 0.5f : 2.0f;
                 }
             }
-/*            else
-            {
-                //neuron.sign = UnityEngine.Random.Range(0, 2) == 0;
-                if (parameter == 0)
-                {
-                    neuron.sigmoid_alpha *= -1;
-                }
-                else if (parameter == 1)
-                {
-                    neuron.bias *= -1;
-                }
-            }*/
-            
-            
+            /*            else
+                        {
+                            //neuron.sign = UnityEngine.Random.Range(0, 2) == 0;
+                            if (parameter == 0)
+                            {
+                                neuron.sigmoid_alpha *= -1;
+                            }
+                            else if (parameter == 1)
+                            {
+                                neuron.bias *= -1;
+                            }
+                        }*/
+
+
         }
 
 
-       // ADD CONNECTION?
+        // ADD CONNECTION?
         should_mutate = Random.Range(0f, 1f) < ADD_CONNECTION_MUTATION_RATE;
         if (should_mutate)
         {
@@ -546,10 +547,11 @@ public class NEATBrainGenome : BrainGenome
 
             if (neuron1 != null && neuron2 != null)
             {
-                if(neuron1.ID < neuron2.ID)
+                if (neuron1.ID < neuron2.ID)
                 {
                     neuron2 = null;
-                }else if (neuron1.ID > neuron2.ID)
+                }
+                else if (neuron1.ID > neuron2.ID)
                 {
                     neuron1 = null;
                 }
@@ -559,7 +561,7 @@ public class NEATBrainGenome : BrainGenome
             {
                 int rnd = Random.Range(0, 2);
                 NEATDevelopmentNeuron neuron_merged = (NEATDevelopmentNeuron)neuron1.Clone();
-                neuron_merged.bias = (neuron1.bias + neuron2.bias)/ 2;
+                neuron_merged.bias = (neuron1.bias + neuron2.bias) / 2;
                 neuron_merged.sigmoid_alpha = (neuron1.sigmoid_alpha + neuron2.sigmoid_alpha) / 2;
                 offspring1.neuron_genome.Add(neuron_merged);
                 offspring2.neuron_genome.Add(neuron_merged.Clone());
@@ -580,7 +582,7 @@ public class NEATBrainGenome : BrainGenome
             }
 
 
-      
+
         }
 
         i = 0;
@@ -617,15 +619,15 @@ public class NEATBrainGenome : BrainGenome
             {
                 int rnd = Random.Range(0, 2);
                 NEATDevelopmentSynapse[] connections = new NEATDevelopmentSynapse[] { connection1, connection2 };
-           
-                
+
+
                 /*        connection_merged.coefficients[0] = (connection1.coefficients[0] + connection2.coefficients[0]) / 2f;
                         connection_merged.coefficients[1] = (connection1.coefficients[1] + connection2.coefficients[1]) / 2f;
                         connection_merged.coefficients[2] = (connection1.coefficients[2] + connection2.coefficients[2]) / 2f;
                         connection_merged.coefficients[3] = (connection1.coefficients[3] + connection2.coefficients[3]) / 2f;*/
                 //connection_merged.learning_rate = (connection1.learning_rate + connection2.learning_rate) / 2f;
                 offspring1.connection_genome.Add(connections[rnd].Clone());
-                offspring2.connection_genome.Add(connections[1-rnd].Clone());
+                offspring2.connection_genome.Add(connections[1 - rnd].Clone());
                 i++;
                 j++;
             }
@@ -644,8 +646,8 @@ public class NEATBrainGenome : BrainGenome
 
             if ((connection1 != null && !connection1.enabled) || (connection2 != null && !connection2.enabled))
             {
-                offspring1.connection_genome[^1].enabled = Random.Range(0f,1.0f) < 0.75f ? false : true;
-                offspring2.connection_genome[^1].enabled = Random.Range(0f,1.0f) < 0.75f ? false : true;
+                offspring1.connection_genome[^1].enabled = Random.Range(0f, 1.0f) < 0.75f ? false : true;
+                offspring2.connection_genome[^1].enabled = Random.Range(0f, 1.0f) < 0.75f ? false : true;
             }
 
 
@@ -675,27 +677,27 @@ public class NEATBrainGenome : BrainGenome
         public NEATDevelopmentSynapse(int from_neuron,
             int to_neuron,
             int ID,
-            float[] coefficients = null, 
+            float[] coefficients = null,
             float learning_rate = 0,
             bool enabled = true) : base(coefficients, learning_rate)
         {
 
             this.ID = ID;
-            
+
             this.from_ID = from_neuron;
             this.to_ID = to_neuron;
             this.enabled = enabled;
 
-            if(coefficients == null)
+            if (coefficients == null)
             {
-                for(int i = 0; i < this.coefficients.Length; i++)
+                for (int i = 0; i < this.coefficients.Length; i++)
                 {
                     this.coefficients[0] = Random.Range(-.1F, .1F);
                     this.coefficients[1] = Random.Range(-.1F, .1F);
                     this.coefficients[2] = Random.Range(-.1F, .1F);
                     this.coefficients[3] = Random.Range(-.1F, .1F);
                 }
-               
+
             }
         }
 
@@ -719,17 +721,17 @@ public class NEATBrainGenome : BrainGenome
 
         public int ID;
 
-        public NEATDevelopmentNeuron(int ID, 
-            int threshold=1,
+        public NEATDevelopmentNeuron(int ID,
+            int threshold = 1,
             float bias = 0,
-            bool sign=true,
-            float adaptation_delta=1,
-            float decay=1,
-            float sigmoid_alpha=1
+            bool sign = true,
+            float adaptation_delta = 1,
+            float decay = 1,
+            float sigmoid_alpha = 1
             ) : base(threshold, bias, sign, adaptation_delta, decay, sigmoid_alpha)
         {
-    
-           this.ID = ID;
+
+            this.ID = ID;
         }
 
 

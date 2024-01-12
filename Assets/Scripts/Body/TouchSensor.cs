@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class TouchSensor : MonoBehaviour
@@ -16,10 +14,10 @@ public class TouchSensor : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if(other.name == "Ground")
+        if (other.name == "Ground")
         {
             touching_terrain = true;
-           // mr.material = green;
+            // mr.material = green;
         }
     }
 

@@ -1,8 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using static BrainGenomeTree;
 
 public class BrainCreatorGUITreeLink : MonoBehaviour
 {
@@ -24,7 +21,7 @@ public class BrainCreatorGUITreeLink : MonoBehaviour
     }
 
     public void Initialize(BrainCreatorGUITreeNode source_node, RectTransform targetUp, RectTransform targetDown)
-    { 
+    {
         this.LR = GetComponent<LineRenderer>();
         this.collider = GetComponent<EdgeCollider2D>();
         this.up = false;
@@ -40,7 +37,7 @@ public class BrainCreatorGUITreeLink : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public void SetPositions()
@@ -50,7 +47,7 @@ public class BrainCreatorGUITreeLink : MonoBehaviour
         this.LR.SetPositions(new Vector3[] { p1, p2 });
         this.collider.points = new Vector2[] { new Vector2(p1.x, p1.y), new Vector2(p2.x, p2.y) };
     }
-    
+
 
     public void SnapTo(RectTransform target)
     {
@@ -74,7 +71,8 @@ public class BrainCreatorGUITreeLink : MonoBehaviour
             this.LR.endColor = colorA;
         }
 
-        if(Input.GetMouseButtonDown(0)){
+        if (Input.GetMouseButtonDown(0))
+        {
             // left click
             Canvas.ForceUpdateCanvases();
 
@@ -87,7 +85,9 @@ public class BrainCreatorGUITreeLink : MonoBehaviour
                 SnapTo(this.targetDown);
             }
             this.up = !this.up;
-        }else if(Input.GetMouseButtonDown(1)){
+        }
+        else if (Input.GetMouseButtonDown(1))
+        {
             // right click
             this.source_node.InsertNewInstructionAbove();
         }

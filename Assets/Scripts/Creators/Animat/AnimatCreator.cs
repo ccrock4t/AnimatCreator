@@ -5,15 +5,11 @@ using System.IO;
 using TMPro;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.UI;
-using Debug = UnityEngine.Debug;
 using static GlobalConfig;
-using Unity.Mathematics;
-using Unity.Jobs.LowLevel.Unsafe;
-using UnityEditor;
-using System.Threading.Tasks;
-using Unity.Entities.UniversalDelegates;
+using Debug = UnityEngine.Debug;
 
 public class AnimatCreator : MonoBehaviour
 {

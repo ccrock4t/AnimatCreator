@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class BodySegment : MonoBehaviour
@@ -23,7 +21,7 @@ public class BodySegment : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
 

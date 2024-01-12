@@ -1,8 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static Brain;
-using static BrainGenomeTree;
 
 public class GraphVisualization3D
 {
@@ -57,7 +54,7 @@ public class GraphVisualization3D
         Vector3Int to_right_position = left_position + new Vector3Int(1, 0, 0);
         TransferNeighborsToRight(to_right_position);
         UpdateDataPosition(right, to_right_position);
-        
+
     }
 
     /// <summary>

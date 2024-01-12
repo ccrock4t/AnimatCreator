@@ -2,16 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
-using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Transforms;
 using UnityEngine;
 using static Brain;
 using static GlobalConfig;
-using static HyperNEATBrainGenome;
 using static UnityEngine.Random;
 
 public abstract class HyperNEATBrainGenome : BrainGenome
@@ -101,9 +97,9 @@ public abstract class HyperNEATBrainGenome : BrainGenome
 
         [Description("COSH")] HyperCosine,
         [Description("SINH")] HyperSine,
-        
+
         [Description("CUB")] Cube,
-        
+
     }
 
 
@@ -117,7 +113,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
         this.layers = new();
     }
 
-   
+
 
     /// <summary>
     /// 
@@ -160,7 +156,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
         }
         // CPPN_node_compute_buffer.EndWrite<CPPNnodeGPU>(CPPN_node_compute_buffer.count);
 
-        
+
         CPPNconnectionParallel[] parallel_connections = new CPPNconnectionParallel[total_num_of_inputs];// CPPN_connection_compute_buffer.BeginWrite<CPPNconnectionGPU>(0, CPPN_connection_compute_buffer.count);
         i = 0;
         for (int j = 0; j < this.layers.Count; j++)
@@ -188,7 +184,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
         return (parallel_nodes, parallel_connections);
     }
 
-   
+
 
 
 
@@ -216,7 +212,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
             return GetRandomCPPNfunction();
             return CPPNFunction.Linear;
         }
-        
+
         this.initial_weight_output_node = new(ID: this.cppn_nodes.Count, GetInitialOutputFunction()); // 0
         this.cppn_nodes.Add(initial_weight_output_node);
         this.LR_output_node = new(ID: this.cppn_nodes.Count, GetInitialOutputFunction()); // 1
@@ -288,7 +284,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
             genome = new RegularHyperNEATBrainGenome();
 
         }
-        else if(this is ESHyperNEATBrainGenome)
+        else if (this is ESHyperNEATBrainGenome)
         {
             genome = new ESHyperNEATBrainGenome();
         }
@@ -297,9 +293,9 @@ public abstract class HyperNEATBrainGenome : BrainGenome
             Debug.LogError("error");
             return null;
         }
-       
 
-        foreach(CPPNnode n in this.cppn_nodes)
+
+        foreach (CPPNnode n in this.cppn_nodes)
         {
             genome.cppn_nodes.Add(n.Clone());
         }
@@ -319,13 +315,13 @@ public abstract class HyperNEATBrainGenome : BrainGenome
     public static CPPNFunction GetRandomCPPNfunction()
     {
         System.Random sysrnd = new();
-        if(INCLUDE_EXTRA_CPPN_FUNCTIONS) return (CPPNFunction)sysrnd.Next(0, Enum.GetNames(typeof(CPPNFunction)).Length);
+        if (INCLUDE_EXTRA_CPPN_FUNCTIONS) return (CPPNFunction)sysrnd.Next(0, Enum.GetNames(typeof(CPPNFunction)).Length);
         else return (CPPNFunction)sysrnd.Next(0, (int)CPPNFunction.Cosine);
     }
 
     public void ChangeRandomCPPNNodeFunction()
     {
-        CPPNnode node = this.cppn_nodes[UnityEngine.Random.Range(sensorimotor_idxs.x,this.cppn_nodes.Count)];
+        CPPNnode node = this.cppn_nodes[UnityEngine.Random.Range(sensorimotor_idxs.x, this.cppn_nodes.Count)];
         node.function = GetRandomCPPNfunction();
     }
 
@@ -396,7 +392,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
 
 
 
-        
+
         int mutation_type;
 
         if (ALLOW_MULTIPLE_MUTATIONS)
@@ -405,11 +401,12 @@ public abstract class HyperNEATBrainGenome : BrainGenome
         }
         else
         {
-            float mutation_type_rnd = Range(0f,1f);
-            if(mutation_type_rnd < 0.06)
+            float mutation_type_rnd = Range(0f, 1f);
+            if (mutation_type_rnd < 0.06)
             {
                 mutation_type = 0;
-            }else if(mutation_type_rnd < 0.12)
+            }
+            else if (mutation_type_rnd < 0.12)
             {
                 mutation_type = 1;
             }
@@ -457,7 +454,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
                 else goto case 2;
             case 2:
                 // ADD NODE?
-                if(this.cppn_connections.Count > 0)
+                if (this.cppn_connections.Count > 0)
                 {
                     should_mutate = (Range(0f, 1f) < ADD_NODE_MUTATION_RATE);
                     while (!ALLOW_MULTIPLE_MUTATIONS || should_mutate)
@@ -487,18 +484,18 @@ public abstract class HyperNEATBrainGenome : BrainGenome
                 break;
         }
 
-        
 
 
 
-/*        // Mutate Brain Update speed
-        should_mutate = Range(0f, 1f) < BRAIN_UPDATE_PERIOD_MUTATION_RATE;
-        while (should_mutate)
-        {
-            this.brain_update_period += Range(0, 2) == 0 ? BRAIN_UPDATE_PERIOD_MUTATION_INCREMENT : -BRAIN_UPDATE_PERIOD_MUTATION_INCREMENT;
-            this.brain_update_period = Mathf.Max(this.brain_update_period, 0.001f);
-        }*/
-        
+
+        /*        // Mutate Brain Update speed
+                should_mutate = Range(0f, 1f) < BRAIN_UPDATE_PERIOD_MUTATION_RATE;
+                while (should_mutate)
+                {
+                    this.brain_update_period += Range(0, 2) == 0 ? BRAIN_UPDATE_PERIOD_MUTATION_INCREMENT : -BRAIN_UPDATE_PERIOD_MUTATION_INCREMENT;
+                    this.brain_update_period = Mathf.Max(this.brain_update_period, 0.001f);
+                }*/
+
         this.FinalizeCPPN();
     }
 
@@ -525,7 +522,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
     {
         int num_of_outputs = (sensorimotor_idxs.y - sensorimotor_idxs.x);
         int from_idx = Range(0, this.cppn_nodes.Count - num_of_outputs);
-        if(from_idx >= sensorimotor_idxs.x && from_idx < sensorimotor_idxs.y)
+        if (from_idx >= sensorimotor_idxs.x && from_idx < sensorimotor_idxs.y)
         {
             // its an output, cant connect from an output
             from_idx += num_of_outputs;
@@ -539,7 +536,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
         {
             int attempts = 0;
             // try to find another connection if the randomly generated one is recurrent
-            while (to_neuron.layer <= from_neuron.layer && attempts < 100) 
+            while (to_neuron.layer <= from_neuron.layer && attempts < 100)
             {
                 from_idx = Range(0, this.cppn_nodes.Count);
                 to_idx = Range(0, this.cppn_nodes.Count);
@@ -548,9 +545,9 @@ public abstract class HyperNEATBrainGenome : BrainGenome
                 attempts++;
             }
 
-             if (to_neuron.layer <= from_neuron.layer) return;
+            if (to_neuron.layer <= from_neuron.layer) return;
         }
-            
+
 
         CPPNconnection new_connection = new(from_ID: from_neuron.ID, to_ID: to_neuron.ID, weight: GetRandomInitialCPPNWeight(), ID: GetNextGlobalCPPNSynapseID());
         this.cppn_connections.Add(new_connection);
@@ -575,7 +572,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
             offspring1 = new RegularHyperNEATBrainGenome();
             offspring2 = new RegularHyperNEATBrainGenome();
         }
-        else if(this is ESHyperNEATBrainGenome)
+        else if (this is ESHyperNEATBrainGenome)
         {
             parent1 = (ESHyperNEATBrainGenome)this;
             parent2 = (ESHyperNEATBrainGenome)genome_parent2;
@@ -785,7 +782,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
     public void FinalizeCPPN()
     {
         // reset nodes
-        foreach(List<CPPNnode> layer in this.layers)
+        foreach (List<CPPNnode> layer in this.layers)
         {
             layer.Clear();
         }
@@ -810,7 +807,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
         // add nodes to input/output lists for easy access
         foreach (CPPNconnection c in this.cppn_connections)
         {
-           //if (!c.enabled) continue;
+            //if (!c.enabled) continue;
             int to_idx = ID_to_idx[c.to_node_ID];
             CPPNnode to_node = this.cppn_nodes[to_idx];
             int from_idx = ID_to_idx[c.from_node_ID];
@@ -822,7 +819,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
 
         // sort nodes into layers.
         Stack<CPPNnode> nodes_to_explore = new();
-        for(int i=0; i < sensorimotor_idxs.x; i++)
+        for (int i = 0; i < sensorimotor_idxs.x; i++)
         {
             this.cppn_nodes[i].layer = SENSORY_LAYER_ID; // sensor layer
             nodes_to_explore.Push(this.cppn_nodes[i]);
@@ -871,11 +868,11 @@ public abstract class HyperNEATBrainGenome : BrainGenome
                     bool output_node_not_visited = !visited.ContainsKey(output_node) || !visited[output_node];
                     if (output_node.layer == INVALID_NEAT_ID || (output_node.layer < node.layer + 1 && output_node_not_visited))
                     {
-                        output_node.layer = node.layer + 1; 
+                        output_node.layer = node.layer + 1;
                         max_hidden_layer = Math.Max(max_hidden_layer, output_node.layer);
-                       
+
                         Explore(output_node);
-                        
+
                         //if (!nodes_to_explore.Contains(output_node) && output_node != node) nodes_to_explore.Push(output_node);
                     }
 
@@ -886,7 +883,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
             while (nodes_to_explore.Count != 0)
             {
                 CPPNnode node = nodes_to_explore.Pop();
-                Explore(node);       
+                Explore(node);
             }
         }
 
@@ -899,12 +896,12 @@ public abstract class HyperNEATBrainGenome : BrainGenome
 
 
         //
- 
+
         for (int i = 0; i <= output_layer; i++)
         {
             this.layers.Add(new List<CPPNnode>());
         }
-  
+
 
 
         foreach (CPPNnode n in this.cppn_nodes)
@@ -964,7 +961,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
             this.sigmoid_alpha = sigmoid_alpha;
             this.activation_function = activation_function;
             this.enabled = enabled;
-    }
+        }
 
         public static CPPNOutputArray GetNewDefault()
         {
@@ -976,7 +973,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
             float result = 0;
             //result += math.pow(a.initial_weight - b.initial_weight, 2);
             result += math.pow(a.learning_rate - b.learning_rate, 2);
-            for(int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++)
             {
                 result += math.pow(a.hebb_ABCD_coefficients[i] - b.hebb_ABCD_coefficients[i], 2);
             }
@@ -1036,10 +1033,11 @@ public abstract class HyperNEATBrainGenome : BrainGenome
                     activation = math.abs(sum);
                     break;
                 case CPPNFunction.Step:
-                    if(sum > 0)
+                    if (sum > 0)
                     {
                         activation = 1;
-                    }else// if(sum < 0)
+                    }
+                    else// if(sum < 0)
                     {
                         activation = 0;
                     }
@@ -1077,7 +1075,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
                     break;
             }
 
-     
+
             if (!float.IsFinite(activation)) return 0.0f;
             else return activation;
         }
@@ -1237,7 +1235,7 @@ public abstract class HyperNEATBrainGenome : BrainGenome
             float weight,
             int from_ID,
             int to_ID,
-            bool enabled=true)
+            bool enabled = true)
         {
             this.ID = ID;
             this.weight = weight;

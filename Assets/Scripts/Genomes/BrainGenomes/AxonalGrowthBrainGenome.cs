@@ -1,6 +1,4 @@
-using Mono.Cecil.Cil;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Unity.Collections;
@@ -9,7 +7,6 @@ using Unity.Mathematics;
 using UnityEngine;
 using static Brain;
 using static GlobalConfig;
-using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 
 public class AxonalGrowthBrainGenome : BrainGenomeTree
 {
@@ -17,13 +14,15 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
     const int AXONAL_GROWTH_LOCAL_RANGE = 5;
     int num_of_joints;
 
-    public AxonalGrowthBrainGenome() : base() {
+    public AxonalGrowthBrainGenome() : base()
+    {
         ProgramSymbolTree root = new(AxonalGrowthCellularInstruction.END);
         this.forest.Add(root);
         this.size = root.size;
     }
 
-    public AxonalGrowthBrainGenome(ProgramSymbolTree root) : base(root) { 
+    public AxonalGrowthBrainGenome(ProgramSymbolTree root) : base(root)
+    {
     }
 
     public AxonalGrowthBrainGenome(List<ProgramSymbolTree> trees) : base(trees) { }
@@ -31,7 +30,7 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
     public static AxonalGrowthBrainGenome CreateTestGenome()
     {
         List<ProgramSymbolTree> forest = new();
-       
+
 
         ProgramSymbolTree A, B, C, D, A0, B0, C0, D0, root;
 
@@ -49,17 +48,17 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
         genome.num_of_joints = GlobalConfig.creature_to_use == Creature.Hexapod ? 21 : 14; // hexapod or quadruped
         return genome;
     }
- 
+
     public static ProgramSymbolTree GetDIVPST()
     {
         ProgramSymbolTree A, B, C, D, A0, B0, C0, D0, root;
         int[] rand_args;
 
-        
+
 
         A0 = new ProgramSymbolTree(instruction: AxonalGrowthCellularInstruction.GROW, children: new ProgramSymbolTree[] { GetENDPST() }, arguments: GenerateRandomArguments(AxonalGrowthCellularInstruction.GROW));
         B0 = GetENDPST();
-       
+
 
         C0 = GetENDPST();
         D0 = GetENDPST();
@@ -83,7 +82,7 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
         // insert sensory neurons
         int3 sensor_coords = new int3(10, 5, 20);
         int3 motor_coords = new int3(10, 5, axonalGrowthVoxelAutomaton.automaton_dimensions.z - 20);
-        for (int i = 0; i < this.num_of_joints; i++) 
+        for (int i = 0; i < this.num_of_joints; i++)
         {
             string joint_key = Animat.GetSensorimotorJointKey(i);
 
@@ -189,7 +188,8 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
                     neuron_indices[Brain.MOTOR_NEURON_KEY][cell.extradata[0..^neuron_type.Length] + neuron_idx] = i;
                     neuron.neuron_class = Neuron.NeuronClass.Motor;
                 }
-                else {
+                else
+                {
                     // this is a sensory (input) neuron, so turn it into a perceptron
                     neuron.type = Neuron.NeuronType.Perceptron;
 
@@ -319,7 +319,7 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
 
     public override ProgramSymbolTree GenerateRandomMutation()
     {
-        int tree_length = UnityEngine.Random.Range(1, MUTATION_TREE_DEPTH+1);
+        int tree_length = UnityEngine.Random.Range(1, MUTATION_TREE_DEPTH + 1);
 
         ProgramSymbolTree root = default;
         ProgramSymbolTree previous = default;
@@ -482,7 +482,7 @@ public class AxonalGrowthBrainGenome : BrainGenomeTree
         return arguments;
     }
 
- 
+
 
     public override void SaveToDisk()
     {

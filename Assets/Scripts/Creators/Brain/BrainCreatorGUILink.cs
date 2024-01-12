@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -21,7 +19,7 @@ public class BrainCreatorGUILink : MonoBehaviour
     }
 
     public void Initialize(RectTransform targetFrom, RectTransform targetTo)
-    { 
+    {
         this.LR = GetComponent<LineRenderer>();
         this.collider = GetComponent<EdgeCollider2D>();
         this.up = false;
@@ -37,7 +35,7 @@ public class BrainCreatorGUILink : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public void SetLinePositions()
@@ -52,9 +50,9 @@ public class BrainCreatorGUILink : MonoBehaviour
 
     public void SetLinkTextPosition()
     {
-        this.input_field.anchoredPosition = Vector3.Lerp(this.targetFrom.anchoredPosition, this.targetTo.anchoredPosition,0.25f);
+        this.input_field.anchoredPosition = Vector3.Lerp(this.targetFrom.anchoredPosition, this.targetTo.anchoredPosition, 0.25f);
     }
-    
+
 
     public void SnapTo(RectTransform target)
     {
@@ -78,7 +76,8 @@ public class BrainCreatorGUILink : MonoBehaviour
             this.LR.endColor = colorA;
         }
 
-        if(Input.GetMouseButtonDown(0)){
+        if (Input.GetMouseButtonDown(0))
+        {
             // left click
             Canvas.ForceUpdateCanvases();
 

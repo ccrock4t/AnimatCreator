@@ -1,8 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -10,7 +8,6 @@ using UnityEngine.UI;
 using static AxonalGrowthBrainGenome;
 using static BrainGenomeTree;
 using static CellularEncodingBrainGenome;
-using static GlobalUtils;
 using static HyperNEATBrainGenome;
 using static TMPro.TMP_Dropdown;
 
@@ -343,7 +340,8 @@ public class BrainCreator : MonoBehaviour
         {
             GameObject GUI_node_GO = Instantiate(this.node_prefab, GUIpage);
             GUI_node = GUI_node_GO.AddComponent<BrainCreatorGUITreeNode>();
-            GUI_node_GO.GetComponent<TMP_Dropdown>().onValueChanged.AddListener(delegate {
+            GUI_node_GO.GetComponent<TMP_Dropdown>().onValueChanged.AddListener(delegate
+            {
                 GUI_node.InstructionChanged();
             });
             GUI_node.Initialize(tree);

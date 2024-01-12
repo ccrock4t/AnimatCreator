@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using Unity.Entities.UniversalDelegates;
-using UnityEditor;
 using UnityEngine;
 using static Brain;
 using static GlobalConfig;

@@ -1,6 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 using static AxonalGrowthBrainGenome;
@@ -8,7 +6,8 @@ using static BrainGenome;
 using static BrainGenomeTree;
 using NeuralVoxelCellInfo = CellInfo<NeuralVoxelCell?>;
 
-public class NeuralVoxelCell { 
+public class NeuralVoxelCell
+{
 
 
     public int3 coords;
@@ -93,16 +92,16 @@ public class AxonalGrowthVoxelAutomaton
 
         int3 ancestor_coords = new int3(24, 24, 24);
 
-        ancestor_neuron.position = new float3(1.0f*ancestor_coords.x / this.automaton_dimensions.x, 1.0f * ancestor_coords.y / this.automaton_dimensions.y, 1.0f * ancestor_coords.z / this.automaton_dimensions.z);
+        ancestor_neuron.position = new float3(1.0f * ancestor_coords.x / this.automaton_dimensions.x, 1.0f * ancestor_coords.y / this.automaton_dimensions.y, 1.0f * ancestor_coords.z / this.automaton_dimensions.z);
 
 
 
 
-        NeuralVoxelCell ancestor_cell = new(neuron: ancestor_neuron, coords: new int3(24,24,24));
+        NeuralVoxelCell ancestor_cell = new(neuron: ancestor_neuron, coords: new int3(24, 24, 24));
         NeuralVoxelCellInfo ancestor_cell_info = this.cell_array[ancestor_coords.x, ancestor_coords.y, ancestor_coords.z];
         ancestor_cell_info.current_state = ancestor_cell;
         this.cell_array[ancestor_coords.x, ancestor_coords.y, ancestor_coords.z] = ancestor_cell_info;
-        
+
 
         this.developing_brain.Add(ancestor_cell);
     }
@@ -113,12 +112,12 @@ public class AxonalGrowthVoxelAutomaton
         int y = coords.y;
         int z = coords.z;
 
-     /*   if (this.cell_array[x, y, z].current_state != null)
-        { 
-            Debug.LogError("Cannot insert neuron; space is occupied");
-            return;
-        }
-*/
+        /*   if (this.cell_array[x, y, z].current_state != null)
+           { 
+               Debug.LogError("Cannot insert neuron; space is occupied");
+               return;
+           }
+   */
 
         TreeDevelopmentNeuron neuron = new(instruction_pointer: null,
             inputs: new List<TreeDevelopmentSynapse>(),
@@ -132,7 +131,7 @@ public class AxonalGrowthVoxelAutomaton
             sigmoid_alpha: 1);
 
         neuron.extradata = extradata;
-        neuron.position = new(1.0f * coords.x/ this.automaton_dimensions.x, 1.0f * coords.y/ this.automaton_dimensions.y, 1.0f * coords.z/ this.automaton_dimensions.z);
+        neuron.position = new(1.0f * coords.x / this.automaton_dimensions.x, 1.0f * coords.y / this.automaton_dimensions.y, 1.0f * coords.z / this.automaton_dimensions.z);
         NeuralVoxelCell neuron_cell = new(neuron: neuron, coords: coords);
         NeuralVoxelCellInfo cell_info = this.cell_array[x, y, z];
         cell_info.current_state = neuron_cell;
@@ -149,7 +148,7 @@ public class AxonalGrowthVoxelAutomaton
 
     public void CalculateAutomatonToEnd()
     {
-        while(this.developing_brain.Count > 0)
+        while (this.developing_brain.Count > 0)
         {
             CalculateNextGridState();
         }
@@ -159,7 +158,7 @@ public class AxonalGrowthVoxelAutomaton
     {
         return (coords.x < 0 || coords.x >= this.automaton_dimensions.x
             || coords.y < 0 || coords.y >= this.automaton_dimensions.y
-            || coords.z < 0 || coords.z >= this.automaton_dimensions.z) ;
+            || coords.z < 0 || coords.z >= this.automaton_dimensions.z);
     }
 
     public void CalculateNextGridState()
@@ -170,8 +169,8 @@ public class AxonalGrowthVoxelAutomaton
         NeuralVoxelCellInfo target_voxel_cell_info;
 
 
-       
-        for(int i=0; i < this.developing_brain.Count; i++)
+
+        for (int i = 0; i < this.developing_brain.Count; i++)
         {
             NeuralVoxelCell neural_voxel_cell = this.developing_brain[i];
             TreeDevelopmentNeuron cell = neural_voxel_cell.neuron;
@@ -193,7 +192,8 @@ public class AxonalGrowthVoxelAutomaton
                     targetY = pointer.arguments[1] + neural_voxel_cell.coords.y;
                     targetZ = pointer.arguments[2] + neural_voxel_cell.coords.z;
 
-                    if(!IsOutOfBounds(new int3(targetX, targetY, targetZ))){
+                    if (!IsOutOfBounds(new int3(targetX, targetY, targetZ)))
+                    {
                         target_voxel_cell_info = this.cell_array[targetX, targetY, targetZ];
 
                         // try to ensure a valid cell
@@ -212,7 +212,7 @@ public class AxonalGrowthVoxelAutomaton
                             // cell is empty, so we can divide into it
                             target_voxel_cell = neural_voxel_cell.Clone(new_coords: new int3(targetX, targetY, targetZ));
 
-                            target_voxel_cell.neuron.position = new(1.0f* targetX / this.automaton_dimensions.x,
+                            target_voxel_cell.neuron.position = new(1.0f * targetX / this.automaton_dimensions.x,
                                                                    1.0f * targetY / this.automaton_dimensions.y,
                                                                     1.0f * targetZ / this.automaton_dimensions.z);
                             if (instruction == AxonalGrowthCellularInstruction.CLONE)
@@ -223,11 +223,11 @@ public class AxonalGrowthVoxelAutomaton
                             {
                                 target_voxel_cell.neuron.MoveToChildB();
                                 // target_voxel_cell.neuron.MoveToChildB();
-                       /*         int tree_index2 = cell.instruction_pointer.tree_index;
-                                int offset2 = cell.instruction_pointer.arguments[3];
-                                int new_tree_idx2 = MathHelper.mod(tree_index2 + offset2, genome.forest.Count);
-                                target_voxel_cell.neuron.instruction_pointer = genome.forest[new_tree_idx2];
-                                target_voxel_cell.neuron.life--;*/
+                                /*         int tree_index2 = cell.instruction_pointer.tree_index;
+                                         int offset2 = cell.instruction_pointer.arguments[3];
+                                         int new_tree_idx2 = MathHelper.mod(tree_index2 + offset2, genome.forest.Count);
+                                         target_voxel_cell.neuron.instruction_pointer = genome.forest[new_tree_idx2];
+                                         target_voxel_cell.neuron.life--;*/
                             }
 
                             cells_born_this_step.Add(target_voxel_cell);
@@ -255,12 +255,12 @@ public class AxonalGrowthVoxelAutomaton
 
                         // try to ensure a valid cell
                         int attempts = 0;
-                        while(target_voxel_cell_info.current_state == null && attempts < MAX_ATTEMPTS_TO_SYNAPSE)
+                        while (target_voxel_cell_info.current_state == null && attempts < MAX_ATTEMPTS_TO_SYNAPSE)
                         {
                             targetX += UnityEngine.Random.Range(-1, 2);
                             targetY += UnityEngine.Random.Range(-1, 2);
                             targetZ += UnityEngine.Random.Range(-1, 2);
-                            if(!IsOutOfBounds(new int3(targetX, targetY, targetZ))) target_voxel_cell_info = this.cell_array[targetX, targetY, targetZ];
+                            if (!IsOutOfBounds(new int3(targetX, targetY, targetZ))) target_voxel_cell_info = this.cell_array[targetX, targetY, targetZ];
                             attempts++;
                         }
 
@@ -456,47 +456,47 @@ public class AxonalGrowthVoxelAutomaton
                 case AxonalGrowthCellularInstruction.JUMP:
                     //if (cell.call_stack.Count < cell.recursive_limit)
                     //{
-                        // call the function if the recursive limit allows it
+                    // call the function if the recursive limit allows it
                     int tree_index = cell.instruction_pointer.tree_index;
                     int offset = cell.instruction_pointer.arguments[0];
                     int new_tree_idx = MathHelper.mod(tree_index + offset, genome.forest.Count);
                     //cell.call_stack.Push(cell.instruction_pointer);
                     cell.instruction_pointer = genome.forest[new_tree_idx];
                     cell.life--;
-       /*             }
-                    else
-                    {
-                        // skip the instruction if recursive limit is reached
-                        cell.MoveToChildA();
-                    }*/
+                    /*             }
+                                 else
+                                 {
+                                     // skip the instruction if recursive limit is reached
+                                     cell.MoveToChildA();
+                                 }*/
 
                     break;
- /*               case AxonalGrowthCellularInstruction.SWAP:
-                    // simply move to next instruction
-                    Debug.LogError("TODO");
-                    cell.MoveToChildA();
-                    break;*/
+                /*               case AxonalGrowthCellularInstruction.SWAP:
+                                   // simply move to next instruction
+                                   Debug.LogError("TODO");
+                                   cell.MoveToChildA();
+                                   break;*/
                 case AxonalGrowthCellularInstruction.WAIT:
                     // simply move to next instruction
                     cell.MoveToChildA();
                     break;
                 case AxonalGrowthCellularInstruction.END:
-/*                    if(cell.call_stack.Count > 0)
-                    {
-                        // function is finished, go back up the call stack.
-                        ProgramSymbolTree call_point = cell.call_stack.Pop();
-                        cell.instruction_pointer = call_point;
-                        cell.MoveToChildA();
-                    }
-                    else
-                    {*/
+                    /*                    if(cell.call_stack.Count > 0)
+                                        {
+                                            // function is finished, go back up the call stack.
+                                            ProgramSymbolTree call_point = cell.call_stack.Pop();
+                                            cell.instruction_pointer = call_point;
+                                            cell.MoveToChildA();
+                                        }
+                                        else
+                                        {*/
                     // program is complete, finalize the neuron
 
                     this.developed_brain.Add(cell);
                     this.developing_brain.RemoveAt(i);
                     i--;
-                  //  }
-                    
+                    //  }
+
                     break;
                 default:
                     Debug.LogError("INSTRUCTION NOT RECOGNIZED");

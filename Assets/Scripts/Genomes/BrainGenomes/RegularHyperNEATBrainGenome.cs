@@ -1,18 +1,12 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Transforms;
-using UnityEditor.MemoryProfiler;
+
 using UnityEngine;
 using static Brain;
-using static Brain.Neuron;
-using static BrainGenome;
-using static ESHyperNEATBrainGenome;
 using static GlobalConfig;
-using static HyperNEATBrainGenome;
 
 public class RegularHyperNEATBrainGenome : HyperNEATBrainGenome
 {
@@ -44,7 +38,7 @@ public class RegularHyperNEATBrainGenome : HyperNEATBrainGenome
     public static RegularHyperNEATBrainGenome CreateTestGenome()
     {
         RegularHyperNEATBrainGenome genome = new();
-        
+
         genome.SetCPPNnodesForIO();
         genome.FinalizeCPPN();
 
@@ -101,7 +95,8 @@ public class RegularHyperNEATBrainGenome : HyperNEATBrainGenome
 
     }
 
-    public override DevelopmentNeuron ReadFromSubstrate(int x, int y, int z){
+    public override DevelopmentNeuron ReadFromSubstrate(int x, int y, int z)
+    {
         return this.substrate[VoxelUtils.Index_FlatFromint3(x, y, z, this.substrate_dimensions)];
     }
 

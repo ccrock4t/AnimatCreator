@@ -1,8 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using Unity.Collections;
 using UnityEngine;
 using static AnimatBody;
 using static GlobalConfig;
@@ -119,19 +117,19 @@ public class BodyGenome
     /// <returns>2 offspring genomes produced by crossover</returns>
     public static (BodyGenome, BodyGenome) MateGenomes(BodyGenome genome1, BodyGenome genome2, CrossoverType crossover = CrossoverType.OnePoint)
     {
-        if(crossover == CrossoverType.OnePoint)
+        if (crossover == CrossoverType.OnePoint)
         {
             int new_genome_length = (genome1.node_array.Length < genome2.node_array.Length) ?
              genome1.node_array.Length : genome2.node_array.Length; // use shorter genome
 
-            
+
             MorphologyNode[] offspring1 = new MorphologyNode[new_genome_length];
             MorphologyNode[] offspring2 = new MorphologyNode[new_genome_length];
             int crossover_idx = UnityEngine.Random.Range(0, new_genome_length);
 
-            for(int i = 0; i < new_genome_length; i++)
+            for (int i = 0; i < new_genome_length; i++)
             {
-                if(i < crossover_idx || i > crossover_idx)
+                if (i < crossover_idx || i > crossover_idx)
                 {
                     offspring1[i] = new MorphologyNode(genome1.node_array[i]);
                     offspring2[i] = new MorphologyNode(genome2.node_array[i]);
@@ -143,26 +141,26 @@ public class BodyGenome
                 }
 
                 MorphologyConnection connection;
-                for (int j=0; j < offspring1[i].connections.Count; j++)
+                for (int j = 0; j < offspring1[i].connections.Count; j++)
                 {
                     connection = offspring1[i].connections[j];
-/*                   
- *                   TODO FIX THIS
- *                   
- *                   if(connection.to_node >= new_genome_length)
-                    {
-                        // node points out of bounds, randomly re-assign
-                        int rnd_idx = UnityEngine.Random.Range(0, new_genome_length);
-                        connection.to_node = rnd_idx;
-                    }*/
+                    /*                   
+                     *                   TODO FIX THIS
+                     *                   
+                     *                   if(connection.to_node >= new_genome_length)
+                                        {
+                                            // node points out of bounds, randomly re-assign
+                                            int rnd_idx = UnityEngine.Random.Range(0, new_genome_length);
+                                            connection.to_node = rnd_idx;
+                                        }*/
                     offspring1[i].connections[j] = connection;
                 }
-                
+
             }
 
             return (new BodyGenome(offspring1), new BodyGenome(offspring2));
         }
-        else if(crossover == CrossoverType.TwoPoint)
+        else if (crossover == CrossoverType.TwoPoint)
         {
             Debug.LogError("Two-point crossover is not yet supported.");
             return (null, null);
@@ -187,19 +185,19 @@ public class BodyGenome
     {
         float rand, rand2;
         int randint, randint2;
-        for(int i = 0; i < genome.node_array.Length; i++)
+        for (int i = 0; i < genome.node_array.Length; i++)
         {
             MorphologyNode node = genome.node_array[i];
             rand = UnityEngine.Random.Range(0.0f, 1.0f);
 
-            if(rand < NODE_MUTATION_RATE)
+            if (rand < NODE_MUTATION_RATE)
             {
                 randint = UnityEngine.Random.Range(0, 3); // 3 parameter types
                 switch (randint)
                 {
                     case 0: // recursive limit
                         node.recursive_limit += (UnityEngine.Random.Range(0, 2) == 0 ? 1 : -1);
-                        if(node.recursive_limit < 1)
+                        if (node.recursive_limit < 1)
                         {
                             node.recursive_limit = 1;
                         }
@@ -228,7 +226,7 @@ public class BodyGenome
 
             for (int j = 0; j < node.connections.Count; j++)
             {
-                
+
                 rand = UnityEngine.Random.Range(0.0f, 1.0f);
 
                 if (rand < CONNECTION_MUTATION_RATE)
@@ -281,7 +279,7 @@ public class BodyGenome
                     node.connections[j] = connection;
                 }
 
-                
+
             }
         }
     }
@@ -303,7 +301,7 @@ public class BodyGenome
 
         // make tree trunk
 
-        MorphologyNode node = new (dimensions: dimensions,
+        MorphologyNode node = new(dimensions: dimensions,
              recursive_limit: 11);
 
         topFacePosition.x *= dimensions.x;
@@ -383,7 +381,7 @@ public class BodyGenome
             position_offset: topFacePosition,
             rotation: topFaceRotation,
             scale: 0.6f,
-            reflection: new Vector3Int(1,-1,1));
+            reflection: new Vector3Int(1, -1, 1));
         root_node.connections.Add(connection);
 
         return nodes.ToArray();
@@ -411,7 +409,7 @@ public class BodyGenome
         body_rotation.x += 10f;
 
         MorphologyConnection body_recursive_connection =
-            new (to_node: body_node,
+            new(to_node: body_node,
             terminal_only: false,
             position_offset: body_recursive_face_position,
             rotation: body_rotation,
@@ -444,7 +442,7 @@ public class BodyGenome
         leg_recursive_rotation.x += 35f;
 
         MorphologyConnection leg_recursive_connection =
-            new (to_node: leg_node,
+            new(to_node: leg_node,
             terminal_only: false,
             position_offset: leg_recursive_face_position,
             rotation: leg_recursive_rotation,
@@ -478,7 +476,7 @@ public class BodyGenome
         Vector3 left_leg_body_face_position = Vector3.Scale(left_face_position, body_dimensions);
 
         MorphologyConnection left_leg_connection =
-            new (to_node: leg_node,
+            new(to_node: leg_node,
             terminal_only: false,
             position_offset: left_leg_body_face_position,
             rotation: left_leg_rotation,
@@ -494,7 +492,7 @@ public class BodyGenome
         right_leg_rotation.z += 35f;
 
         MorphologyConnection right_leg_connection =
-            new (to_node: leg_node,
+            new(to_node: leg_node,
             terminal_only: false,
             position_offset: right_leg_body_face_position,
             rotation: right_leg_rotation,
@@ -519,7 +517,7 @@ public class BodyGenome
         // make body node
         (Vector3 top_face_position, Vector3 top_face_rotation) = segment_face_positions_and_rotations["+y"];
         Vector3 body_dimensions = new Vector3(1, 2, 1);
-        MorphologyNode body_node = new (dimensions: body_dimensions);
+        MorphologyNode body_node = new(dimensions: body_dimensions);
 
         body_node.name = "body node";
         nodes.Add(body_node);
@@ -544,10 +542,10 @@ public class BodyGenome
         //make recursive limb connections
         Vector3 limb_recursive_face_position = Vector3.Scale(top_face_position, limb_dimensions);
         Vector3 limb_recursive_rotation = top_face_rotation;
-        limb_recursive_rotation.z += 20f; 
+        limb_recursive_rotation.z += 20f;
 
         MorphologyConnection limb_recursive_connection =
-            new (to_node: limb_node,
+            new(to_node: limb_node,
             terminal_only: false,
             position_offset: limb_recursive_face_position,
             rotation: limb_recursive_rotation,
@@ -565,7 +563,7 @@ public class BodyGenome
         left_leg_rotation.z -= 20;
 
         MorphologyConnection left_leg_connection =
-            new (to_node: limb_node,
+            new(to_node: limb_node,
             terminal_only: false,
             position_offset: left_leg_body_face_position,
             rotation: left_leg_rotation,
@@ -575,12 +573,12 @@ public class BodyGenome
 
         // make right leg connection
         MorphologyConnection right_leg_connection =
-            new (to_node: limb_node,
+            new(to_node: limb_node,
             terminal_only: false,
             position_offset: left_leg_body_face_position,
             rotation: left_leg_rotation,
             scale: 1,
-            reflection: new Vector3Int(1,-1,1));
+            reflection: new Vector3Int(1, -1, 1));
 
         body_node.connections.Add(right_leg_connection);
 
@@ -595,7 +593,7 @@ public class BodyGenome
         left_arm_rotation.z += 40f;
 
         MorphologyConnection left_arm_connection =
-            new (to_node: limb_node,
+            new(to_node: limb_node,
             terminal_only: false,
             position_offset: left_arm_body_face_position,
             rotation: left_arm_rotation,
@@ -616,7 +614,7 @@ public class BodyGenome
         right_arm_rotation.x += 180;
 
         MorphologyConnection right_arm_connection =
-            new (to_node: limb_node,
+            new(to_node: limb_node,
             terminal_only: false,
             position_offset: right_arm_body_face_position,
             rotation: right_arm_rotation,
@@ -689,40 +687,40 @@ public class BodyGenome
             rotation: ab_rotation,
             scale: 1);
 
-        
+
 
         body_node0.connections.Add(body_head_connection);
 
         //make head-fang connections (left and right fang)
 
-/*        Vector3 fang_face_position = front_face_position;
-        fang_face_position.x -= 0.33f;
+        /*        Vector3 fang_face_position = front_face_position;
+                fang_face_position.x -= 0.33f;
 
-        fang_face_position = Vector3.Scale(fang_face_position, body_dimensions);
-        Vector3 fang_rotation = front_face_rotation;
-        MorphologyConnection fang_head_connection =
-            new (to_node: 2,
-            terminal_only: false,
-            position: fang_face_position,
-            rotation: fang_rotation,
-            scale: 1);
+                fang_face_position = Vector3.Scale(fang_face_position, body_dimensions);
+                Vector3 fang_rotation = front_face_rotation;
+                MorphologyConnection fang_head_connection =
+                    new (to_node: 2,
+                    terminal_only: false,
+                    position: fang_face_position,
+                    rotation: fang_rotation,
+                    scale: 1);
 
-        body_node0.connections.Add(fang_head_connection);
+                body_node0.connections.Add(fang_head_connection);
 
-        fang_face_position = front_face_position;
-        fang_face_position.x += 0.33f;
+                fang_face_position = front_face_position;
+                fang_face_position.x += 0.33f;
 
-        fang_face_position = Vector3.Scale(fang_face_position, body_dimensions);
-        fang_rotation = front_face_rotation;
-        fang_head_connection =
-            new (to_node: 2,
-            terminal_only: false,
-            position: fang_face_position,
-            rotation: fang_rotation,
-            scale: 1);
+                fang_face_position = Vector3.Scale(fang_face_position, body_dimensions);
+                fang_rotation = front_face_rotation;
+                fang_head_connection =
+                    new (to_node: 2,
+                    terminal_only: false,
+                    position: fang_face_position,
+                    rotation: fang_rotation,
+                    scale: 1);
 
-        body_node0.connections.Add(fang_head_connection);
-*/
+                body_node0.connections.Add(fang_head_connection);
+        */
 
 
 
@@ -746,7 +744,7 @@ public class BodyGenome
 
         Vector3 left_leg_body_face_position = Vector3.Scale(left_face_position, body_dimensions);
 
-        for(float i=0.5f; i >= -0.5f; i -= 0.33f)
+        for (float i = 0.5f; i >= -0.5f; i -= 0.33f)
         {
             Vector3 position = left_leg_body_face_position;
             position.z = i * body_dimensions.z;
@@ -911,7 +909,7 @@ public class BodyGenome
 
         // make tree trunk
 
-        MorphologyNode root_node = new (dimensions: dimensions,
+        MorphologyNode root_node = new(dimensions: dimensions,
              recursive_limit: 11);
         nodes.Add(root_node);
 

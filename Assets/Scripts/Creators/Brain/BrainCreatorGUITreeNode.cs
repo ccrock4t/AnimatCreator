@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,7 +23,7 @@ public class BrainCreatorGUITreeNode : MonoBehaviour
 
     }
 
-    public void Initialize(CellularEncodingBrainGenome.ProgramSymbolTree tree, PositionData2D parent=null)
+    public void Initialize(CellularEncodingBrainGenome.ProgramSymbolTree tree, PositionData2D parent = null)
     {
         this.dropdown = this.transform.GetComponent<TMP_Dropdown>();
         this.tree = tree;
@@ -35,7 +33,7 @@ public class BrainCreatorGUITreeNode : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     /// <summary>
@@ -44,11 +42,11 @@ public class BrainCreatorGUITreeNode : MonoBehaviour
     public void InsertNewInstructionAbove()
     {
 
-        ProgramSymbolTree empty_instruction = new CellularEncodingBrainGenome.ProgramSymbolTree(CECellularInstruction.WAIT );
-        for (int i=0; i< this.parent.tree.children.Length; i++)
+        ProgramSymbolTree empty_instruction = new CellularEncodingBrainGenome.ProgramSymbolTree(CECellularInstruction.WAIT);
+        for (int i = 0; i < this.parent.tree.children.Length; i++)
         {
             CellularEncodingBrainGenome.ProgramSymbolTree child = this.parent.tree.children[i];
-            if(child == this.tree)
+            if (child == this.tree)
             {
                 empty_instruction.SetTreeIndex(child.tree_index);
                 this.parent.tree.InsertNode(i, empty_instruction);
@@ -148,8 +146,8 @@ public class BrainCreatorGUITreeNode : MonoBehaviour
             Debug.Log("Y coordinate of button was NaN. Moving button to this.y = " + newY);
             //newX = Random.Range(-500, 500);
         }
-       
-        
+
+
         this.gameObject.GetComponent<RectTransform>().anchoredPosition = new Vector3(
             newX,
             newY);

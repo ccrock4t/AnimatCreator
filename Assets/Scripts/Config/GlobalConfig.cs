@@ -1,4 +1,3 @@
-using Unity.Mathematics;
 using UnityEngine;
 
 public class GlobalConfig : MonoBehaviour
@@ -35,7 +34,7 @@ public class GlobalConfig : MonoBehaviour
         Biped
     };
 
- 
+
 
 
     public static Creature creature_to_use = Creature.Quadruped;

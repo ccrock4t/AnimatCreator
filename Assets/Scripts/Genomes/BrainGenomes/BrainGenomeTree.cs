@@ -1,14 +1,9 @@
-using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
-using System.Threading;
 using Unity.Mathematics;
 using UnityEngine;
 using static AxonalGrowthBrainGenome;
-using static Brain;
 using static CellularEncodingBrainGenome;
-using static GraphVisualization3D;
 
 /// <summary>
 ///     The grammar tree encoding the brain development
@@ -75,10 +70,11 @@ public abstract class BrainGenomeTree : BrainGenome
 
 
         BrainGenomeTree cloned_genome;
-        if(this is CellularEncodingBrainGenome)
+        if (this is CellularEncodingBrainGenome)
         {
             cloned_genome = new CellularEncodingBrainGenome(cloned_trees);
-        }else if (this is AxonalGrowthBrainGenome)
+        }
+        else if (this is AxonalGrowthBrainGenome)
         {
             cloned_genome = new AxonalGrowthBrainGenome(cloned_trees);
         }
@@ -91,7 +87,7 @@ public abstract class BrainGenomeTree : BrainGenome
         return cloned_genome;
     }
 
-    
+
     /// <summary>
     ///     Mutate the genome
     /// </summary>
@@ -113,14 +109,14 @@ public abstract class BrainGenomeTree : BrainGenome
             AVG_NODE_MUTATIONS_PER_MUTATE = Mathf.Max(AVG_NODE_MUTATIONS_PER_MUTATE, 1); // minimum of 1 mutation average
         }
 
-   
+
         // mutate the tree depth
-/*        should_mutate = UnityEngine.Random.Range(0f, 1f) < TREE_DEPTH_MUTATION_RATE;
-        if (should_mutate)
-        {
-            MUTATION_TREE_DEPTH += UnityEngine.Random.Range(0, 2) == 0 ? -1 : 1;
-            MUTATION_TREE_DEPTH = Mathf.Max(MUTATION_TREE_DEPTH, 1); // minimum of 1 mutation average
-        }*/
+        /*        should_mutate = UnityEngine.Random.Range(0f, 1f) < TREE_DEPTH_MUTATION_RATE;
+                if (should_mutate)
+                {
+                    MUTATION_TREE_DEPTH += UnityEngine.Random.Range(0, 2) == 0 ? -1 : 1;
+                    MUTATION_TREE_DEPTH = Mathf.Max(MUTATION_TREE_DEPTH, 1); // minimum of 1 mutation average
+                }*/
 
 
         // mutate the number of trees
@@ -161,10 +157,10 @@ public abstract class BrainGenomeTree : BrainGenome
 
 
         bool should_mutate = UnityEngine.Random.Range(0f, 1f) < (AVG_NODE_MUTATIONS_PER_MUTATE / this.size);
-         if (!should_mutate) return;
+        if (!should_mutate) return;
         int mutation_type = UnityEngine.Random.Range(1, 4); // 1 change gene, 2 add gene, 3 delete gene
-        
-        if(GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.CellularEncoding)
+
+        if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.CellularEncoding)
         {
             if ((CECellularInstruction)tree.instruction == CECellularInstruction.END && (mutation_type == 2 || mutation_type == 3))
             {
@@ -176,7 +172,8 @@ public abstract class BrainGenomeTree : BrainGenome
             {
                 mutation_type = 2; // add a gene
             }
-        }else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.SGOCE)
+        }
+        else if (GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.SGOCE)
         {
             if ((AxonalGrowthCellularInstruction)tree.instruction == AxonalGrowthCellularInstruction.END && (mutation_type == 2 || mutation_type == 3))
             {
@@ -197,8 +194,8 @@ public abstract class BrainGenomeTree : BrainGenome
         {
             // change gene
             //Debug.Log("mutating... change gene from " + tree.instruction + " to " + mutation.instruction);
-            int change = UnityEngine.Random.Range(0, tree.arguments.Length+1); // more args => more chance to change 1 arg rather than whole instruction
-            if(change == 0 || GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.CellularEncoding)
+            int change = UnityEngine.Random.Range(0, tree.arguments.Length + 1); // more args => more chance to change 1 arg rather than whole instruction
+            if (change == 0 || GlobalConfig.brain_genome_method == GlobalConfig.BrainGenomeMethod.CellularEncoding)
             {
                 // change the whole instruction
                 tree.ChangeInstruction(mutation.instruction, GenerateRandomArguments(mutation.instruction));
@@ -210,7 +207,7 @@ public abstract class BrainGenomeTree : BrainGenome
                 int rnd_arg_idx = UnityEngine.Random.Range(0, tree.arguments.Length);
                 tree.arguments[rnd_arg_idx] = rnd_args[rnd_arg_idx];
             }
-            
+
         }
         else if (mutation_type == 2)
         {
@@ -369,7 +366,7 @@ public abstract class BrainGenomeTree : BrainGenome
         data_file.WriteLine(instruction);
 
         data_file.WriteLine(ARGS_DELIMITER);
-        foreach(int argument in tree.arguments)
+        foreach (int argument in tree.arguments)
         {
             data_file.WriteLine(argument);
         }
@@ -474,8 +471,8 @@ public abstract class BrainGenomeTree : BrainGenome
         {
             if (i < x1 || i >= x2)
             {
-                if(i < genome_parent1.forest.Count) offspring1_trees.Add(genome_parent1.forest[i].Clone());
-                if(i < genome_parent2.forest.Count) offspring2_trees.Add(genome_parent2.forest[i].Clone());
+                if (i < genome_parent1.forest.Count) offspring1_trees.Add(genome_parent1.forest[i].Clone());
+                if (i < genome_parent2.forest.Count) offspring2_trees.Add(genome_parent2.forest[i].Clone());
             }
             else
             {
@@ -498,7 +495,7 @@ public abstract class BrainGenomeTree : BrainGenome
             return (null, null);
         }
 
-       
+
     }
 
     public class ProgramSymbolTree
@@ -524,7 +521,7 @@ public abstract class BrainGenomeTree : BrainGenome
         {
             this.instruction = instruction;
 
-            if(children == null) children = new ProgramSymbolTree[0];
+            if (children == null) children = new ProgramSymbolTree[0];
             this.SetChildren(children);
 
             if (arguments == null) arguments = new int[0];
@@ -684,7 +681,7 @@ public abstract class BrainGenomeTree : BrainGenome
 
             this.instruction = to_instruction;
 
-        
+
         }
 
         public void SetChildren(ProgramSymbolTree[] children)
@@ -732,7 +729,7 @@ public abstract class BrainGenomeTree : BrainGenome
             else if (HowManyChildren(new_child.instruction) == 2)
             {
                 int rnd = UnityEngine.Random.Range(0, 2); // RANDOM
-                if(rnd == 0) new_child.SetChildren(new ProgramSymbolTree[] { old_child, GetENDPST() });
+                if (rnd == 0) new_child.SetChildren(new ProgramSymbolTree[] { old_child, GetENDPST() });
                 else new_child.SetChildren(new ProgramSymbolTree[] { GetENDPST(), old_child });
 
             }
@@ -837,9 +834,9 @@ public abstract class BrainGenomeTree : BrainGenome
     public class IOBlock : TreeDevelopmentNode
     {
         public IOBlock() : base(null, null)
-        { 
-            this.inputs = new ();
-            this.outputs = new ();
+        {
+            this.inputs = new();
+            this.outputs = new();
         }
     }
 
@@ -950,7 +947,7 @@ public abstract class BrainGenomeTree : BrainGenome
 
 
             // clone the outputs
-            if(this.outputs != null)
+            if (this.outputs != null)
             {
                 foreach (TreeDevelopmentNode o in this.outputs)
                 {

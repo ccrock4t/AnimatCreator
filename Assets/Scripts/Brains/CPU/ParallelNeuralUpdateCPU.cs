@@ -62,7 +62,7 @@ public struct ParallelNeuralUpdateCPU : IJobParallelFor
             neuron.real_num_of_synapses++;
         }
 
- 
+
         if (neuron.type == Neuron.NeuronType.Spiking)
         {
             neuron.voltage += sum;
@@ -114,7 +114,7 @@ public struct ParallelNeuralUpdateCPU : IJobParallelFor
         /*
          * Second do the Hebbian learning calculation 
          */
- 
+
         float delta_weight;
         for (int j = start_idx; j < end_idx; j++)
         {
@@ -149,19 +149,19 @@ public struct ParallelNeuralUpdateCPU : IJobParallelFor
             }
 
             // constrain weight in [-1,1]
-   /*         if(connection.weight > 1)
-            {
-                connection.weight = 1;
-            }else if(connection.weight < -1)
-            {
-                connection.weight = -1;
-            }*/
+            /*         if(connection.weight > 1)
+                     {
+                         connection.weight = 1;
+                     }else if(connection.weight < -1)
+                     {
+                         connection.weight = -1;
+                     }*/
 
             this.next_state_synapses[j] = connection; // set the data
         }
 
 
-    
+
     }
 
 

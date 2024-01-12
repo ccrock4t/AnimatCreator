@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
@@ -6,7 +5,7 @@ using UnityEngine;
 using static Brain;
 using static GraphVisualization3D;
 
-public abstract class BrainGenome 
+public abstract class BrainGenome
 {
     /// <summary>
     /// SAVE AND LOAD BRAIN GENOMES
@@ -55,7 +54,7 @@ public abstract class BrainGenome
             {
                 this.coefficients = coefficients;
             }
-            
+
             this.learning_rate = learning_rate;
         }
 
