@@ -25,4 +25,4 @@ NEAT: [https://www.youtube.com/watch?v=3PsT3HhZ-AA](https://www.youtube.com/watc
 
 HyperNEAT: [https://www.youtube.com/watch?v=NbGKKZ56JVA](https://www.youtube.com/watch?v=NbGKKZ56JVA)
 
-ES-HyperNEAT: [https://www.youtube.com/watch?v=yJtEJzYPpl0](https://www.youtube.com/watch?v=yJtEJzYPpl0)
+ES-HyperNEAT: [https://www.youtube.com/watch?v=2ID8hFq6fGA](https://www.youtube.com/watch?v=2ID8hFq6fGA)
