@@ -505,7 +505,7 @@ public class Animat : MonoBehaviour
                     float difference = activation * AnimatBody.DRIVE_LIMITS - drive.target;
                     if (difference > AnimatBody.TARGET_MODE_MAX_DEGREES_MOVED_PER_SECOND) difference = AnimatBody.TARGET_MODE_MAX_DEGREES_MOVED_PER_SECOND;
                     if (difference < -AnimatBody.TARGET_MODE_MAX_DEGREES_MOVED_PER_SECOND) difference = -AnimatBody.TARGET_MODE_MAX_DEGREES_MOVED_PER_SECOND;
-                    float new_activation = (segment.xDrive.target + difference) / AnimatBody.DRIVE_LIMITS;
+                    float new_activation = (drive.target + difference) / AnimatBody.DRIVE_LIMITS;
                     if (new_activation > 1) new_activation = 1;
                     if (new_activation < -1) new_activation = -1;
                     return new_activation;
