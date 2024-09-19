@@ -1,3 +1,4 @@
+using Unity.Mathematics;
 using UnityEngine;
 
 public class GlobalConfig : MonoBehaviour
@@ -8,36 +9,23 @@ public class GlobalConfig : MonoBehaviour
         GPU
     }
 
-
-    public enum BrainGenomeMethod
+    public enum SmoothingMethod
     {
-        CellularEncoding,
-        SGOCE,
-        NEAT,
-        HyperNEAT,
-        ESHyperNEAT
+        None,
+        MarchingCubes
+    }
+
+    public enum GenomeMethod
+    {
+        CPPN,
+        LinearGenomeandNEAT
     }
 
 
+    // === User Preferences ===
+    public const int TARGET_FRAMERATE = 30;
 
-
-    // types of creatures
-    public enum Creature
-    {
-        Asparagus,
-        Tree,
-        Bug,
-        Human,
-        Spider,
-        Hexapod,
-        Quadruped,
-        Biped
-    };
-
-
-
-
-    public static Creature creature_to_use = Creature.Quadruped;
+    // ============
 
     // === GPU ===
     // To maximize usage of the GPU, request the max number of threads per thread group (brand-dependent), and request the min number of thread groups per dispatch
@@ -46,21 +34,40 @@ public class GlobalConfig : MonoBehaviour
 
     // ============
 
+    // === Genome ===
+    public const GenomeMethod GENOME_METHOD = GenomeMethod.LinearGenomeandNEAT;
+
+    // === Generator Network ===
+    public const int generator_network_hidden_layer_width = 10;
+    public const int generator_network_hidden_layer_quantity = 10;
+
+    // === Animat ===
+    public const int NUM_OF_SENSOR_NEURONS = 2; // touch, ray1, or  driving function (sine) 
+    public const int NUM_OF_HIDDEN_NEURONS_PER_LAYER = 4;
+    public const int NUM_OF_HIDDEN_LAYERS = 3;
+    // deleted 
+    public const int NUM_OF_MOTOR_NEURONS = 3; // motor x, motor y
+
+    public static readonly int MAX_LAYER_SIZE = math.max(NUM_OF_MOTOR_NEURONS, math.max(NUM_OF_SENSOR_NEURONS, NUM_OF_HIDDEN_NEURONS_PER_LAYER));
+
+    //x,y,z,layernum,neuron num in layer
+
+    public const bool USE_MULTILAYER_PERCEPTRONS_IN_CELL = true;
+    public static readonly int5 ANIMAT_SUBSTRATE_DIMENSIONS = USE_MULTILAYER_PERCEPTRONS_IN_CELL ? new (5,3,3, NUM_OF_HIDDEN_LAYERS + 2, MAX_LAYER_SIZE) : new(6, 6, 6, 1, 1); 
+
 
     // === Animat brain ===
-    public static ProcessingMethod brain_processing_method = ProcessingMethod.CPU;
-    public static ProcessingMethod brain_genome_development_processing_method = ProcessingMethod.CPU;
-    public static BrainGenomeMethod brain_genome_method = BrainGenomeMethod.NEAT;
+    public const ProcessingMethod brain_processing_method = ProcessingMethod.CPU;
+    public const ProcessingMethod brain_genome_development_processing_method = ProcessingMethod.CPU;
 
-    public static float ANIMAT_BRAIN_UPDATE_PERIOD = 0.2f; // must be a multiple to Time.fixedDeltaTime (default=0.02)
-    public static float BRAIN_VIEWER_UPDATE_PERIOD = 0.2f;
+    public const float ANIMAT_BRAIN_UPDATE_PERIOD = 0.04f; // must be a multiple to Time.fixedDeltaTime (default=0.02), since it is used in FixedUpdate()
+    public const float BRAIN_VIEWER_UPDATE_PERIOD = 0.08f;
 
     // ============
 
     // === Animat body ===
-    public const float ANIMAT_BODY_SCALE = 0.2f;
+    public const int MAX_VOXELYZE_ITERATIONS = 200000;
 
-    public const bool USE_FORCE_MODE = false;
     // ============
 
     // === Saving and loading ===
@@ -69,9 +76,4 @@ public class GlobalConfig : MonoBehaviour
     public const string open_string = "[";
     public const string close_string = "]";
     // ============
-
-    private void Awake()
-    {
-
-    }
 }
