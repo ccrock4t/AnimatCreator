@@ -14,7 +14,7 @@ using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using static UnityEngine.Rendering.VirtualTexturing.Debugging;
 
-[BurstCompile]
+////[burstcompile]
 // for each quad
 public struct ParallelDoTimestep : IJobParallelFor
 {

@@ -4,5 +4,9 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/AnimatArena.unity
+    guid: 2525bd7ef586115438441d8411a7a2c8
   m_configObjects: {}
+  m_UseUCBPForAssetBundles: 0

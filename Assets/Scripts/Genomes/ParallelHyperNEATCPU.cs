@@ -9,7 +9,7 @@ using static GlobalConfig;
 using static SoftVoxelRobot;
 
 
-[BurstCompile]
+//[burstcompile]
 public struct ParallelHyperNEATCPU : IJobParallelFor
 {
     public MultiLayerNetworkInfo network_info;

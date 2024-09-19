@@ -2,13 +2,12 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
-using UnityEditor.MemoryProfiler;
 using UnityEngine;
 using static Brain;
 
 // Parallel compute the neural activations for the next time step
 
-[BurstCompile]
+//[burstcompile]
 public struct ParallelNeuralUpdateCPU : IJobParallelFor
 {
 

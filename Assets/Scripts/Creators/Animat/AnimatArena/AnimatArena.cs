@@ -14,6 +14,7 @@ using Quaternion = UnityEngine.Quaternion;
 using static Animat;
 using static CPPNGenome;
 using static GlobalConfig;
+using Unity.VisualScripting;
 
 public class AnimatArena : MonoBehaviour
 {
@@ -89,7 +90,9 @@ public class AnimatArena : MonoBehaviour
     bool LOAD_MODE = false; // Load mode means to load the brain from disk, for testing purposes, rather than to evolve 
 
     // handles
-    string data_filename = Path.Join(Path.Join(Application.dataPath, "ExperimentDataFiles"), Path.Join("AnimatArena", "arena_score_data.txt"));
+
+    string data_filename;
+
     StreamWriter data_file;
     Comparer<float> ascending_score_comparer;
     Comparer<float> descending_score_comparer;
@@ -100,6 +103,11 @@ public class AnimatArena : MonoBehaviour
     void Start()
     {
         _instance = this;
+
+        string data_directory = Path.Join(Path.Join(Application.dataPath, "ExperimentDataFiles"), "AnimatArena");
+        if (!Directory.Exists(data_directory)) Directory.CreateDirectory(data_directory);
+        this.data_filename = Path.Join(data_directory, "arena_score_data.txt");
+
         Time.captureDeltaTime = 1f / GlobalConfig.TARGET_FRAMERATE; // set a target framerate
         JobsUtility.JobWorkerCount = SystemInfo.processorCount - 1; // number of CPU cores minus 1. This prevents Unity from going overthrottling the CPU (https://thegamedev.guru/unity-performance/job-system-excessive-multithreading/)
         Debug.Log("Running with " + JobsUtility.JobWorkerCount + " threads");
