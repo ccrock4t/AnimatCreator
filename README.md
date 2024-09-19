@@ -1,4 +1,4 @@
-# AnimatCreator
+# AnimatCreator v2
 Create animal robots and evolve their brains to walk and seek food
 
 You can select one of various Genetic Encodings for the brain (in GlobalConfig.cs file):
