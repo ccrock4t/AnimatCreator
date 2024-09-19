@@ -99,22 +99,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   neuron:
     type: 0
-    activation_function: 0
     sign: 0
-    neuron_class: 0
+    sensory: 0
     firing: 0
     voltage: 0
     activation: 0
-    threshold: 0
-    bias: 0
-    adaptation_delta: 0
-    decay_rate_tau: 0
     sigmoid_alpha: 0
-    synapse_start_idx: 0
-    synapse_count: 0
-    position:
-      x: 0
-      y: 0
-      z: 0
-    real_num_of_synapses: 0
-  SR: {fileID: 0}

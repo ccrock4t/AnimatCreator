@@ -1,0 +1,2 @@
+Num of Elite Animats,Average Distance Score,Max Distance Score,Average Food Eaten,Max Food Eaten,Average Reproductive Score,Max Reproductive Score,Average Times Self-Reproduced,Max Times Self-Reproduced,Generation
+0,NaN,0,NaN,0,NaN,0,NaN,0,NaN
