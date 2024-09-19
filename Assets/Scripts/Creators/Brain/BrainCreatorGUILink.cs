@@ -1,10 +1,13 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.UI.Extensions;
 
 public class BrainCreatorGUILink : MonoBehaviour
 {
-    public LineRenderer LR;
-    EdgeCollider2D collider;
+    public UILineRenderer LR;
+    EdgeCollider2D edge_collider;
     ScrollRect SR;
     bool up;
 
@@ -12,6 +15,8 @@ public class BrainCreatorGUILink : MonoBehaviour
     public RectTransform targetTo;
 
     public RectTransform input_field;
+    public RectTransform directional_arrow;
+    public Brain.Synapse synapse;
 
     // Start is called before the first frame update
     void Start()
@@ -19,9 +24,9 @@ public class BrainCreatorGUILink : MonoBehaviour
     }
 
     public void Initialize(RectTransform targetFrom, RectTransform targetTo)
-    {
-        this.LR = GetComponent<LineRenderer>();
-        this.collider = GetComponent<EdgeCollider2D>();
+    { 
+        this.LR = GetComponent<UILineRenderer>();
+        this.edge_collider = GetComponent<EdgeCollider2D>();
         this.up = false;
 
         this.SR = this.transform.GetComponentInParent<ScrollRect>();
@@ -35,26 +40,38 @@ public class BrainCreatorGUILink : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        
     }
 
     public void SetLinePositions()
     {
-        Vector3 p1 = this.targetFrom.anchoredPosition;
-        Vector3 p2 = this.targetTo.anchoredPosition;
-        this.LR.SetPositions(new Vector3[] { p1, p2 });
-        this.collider.points = new Vector2[] { new Vector2(p1.x, p1.y), new Vector2(p2.x, p2.y) };
-        SetLinkTextPosition();
+        Vector2 p1 = this.targetFrom.anchoredPosition;
+        Vector2 p2 = this.targetTo.anchoredPosition;
+        this.LR.Points = new Vector2[] { p1, p2 };
+        this.edge_collider.points = new Vector2[] { new Vector2(p1.x, p1.y), new Vector2(p2.x, p2.y) };
+        SetLinkDecoratorPositions();
 
     }
 
-    public void SetLinkTextPosition()
+    public void SetLinkDecoratorPositions()
     {
-        this.input_field.anchoredPosition = Vector3.Lerp(this.targetFrom.anchoredPosition, this.targetTo.anchoredPosition, 0.25f);
-    }
+        if (this.input_field != null) this.input_field.anchoredPosition = Vector3.Lerp(this.targetFrom.anchoredPosition, this.targetTo.anchoredPosition,0.25f);
+        if (this.directional_arrow != null)
+        {
+            this.directional_arrow.anchoredPosition = Vector3.Lerp(this.targetFrom.anchoredPosition, this.targetTo.anchoredPosition, 0.75f);
+            float x = this.targetTo.position.x - this.targetFrom.position.x;
+            float h = Vector2.Distance(this.targetTo.position, this.targetFrom.position);
+            float angle_to_rotate = Mathf.Rad2Deg * -Mathf.Asin(x / h);
+            if (this.targetTo.position.y - this.targetFrom.position.y < 0) angle_to_rotate -= 90f;
+            this.directional_arrow.rotation = Quaternion.Euler(new Vector3(this.directional_arrow.eulerAngles.x, this.directional_arrow.eulerAngles.y,angle_to_rotate )); 
+        }
+
+        }
 
 
-    public void SnapTo(RectTransform target)
+
+
+        public void SnapTo(RectTransform target)
     {
         Canvas.ForceUpdateCanvases();
 
@@ -67,17 +84,18 @@ public class BrainCreatorGUILink : MonoBehaviour
     {
         if (up)
         {
-            this.LR.startColor = colorA;
-            this.LR.endColor = colorA;
+            this.LR.color = colorA;
+            /*this.LR.startColor = colorA;
+            this.LR.endColor = colorA;*/
         }
         else
         {
-            this.LR.startColor = colorA;
-            this.LR.endColor = colorA;
+            this.LR.color = colorA;
+            /*     this.LR.startColor = colorA;
+                 this.LR.endColor = colorA;*/
         }
 
-        if (Input.GetMouseButtonDown(0))
-        {
+        if(Input.GetMouseButtonDown(0)){
             // left click
             Canvas.ForceUpdateCanvases();
 
@@ -96,7 +114,6 @@ public class BrainCreatorGUILink : MonoBehaviour
 
     void OnMouseExit()
     {
-        this.LR.startColor = Color.black;
-        this.LR.endColor = Color.black;
+        this.LR.color = Color.black;
     }
 }
