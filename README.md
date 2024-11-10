@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/720536663.svg)](https://doi.org/10.5281/zenodo.14064024)
+
 # AnimatCreator v2
 Create animal robots and evolve their brains to walk and seek food
 
